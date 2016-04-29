@@ -1,0 +1,9 @@
+flags: {}
+extra-package-dbs: []
+packages:
+- '.'
+extra-deps:
+- haskelldb-2.2.4
+- text-1.2.2.0
+- yaml-0.8.16
+resolver: lts-5.8
