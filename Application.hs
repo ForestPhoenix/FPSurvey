@@ -27,11 +27,13 @@ import Network.Wai.Middleware.RequestLogger (Destination (Logger),
 import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
                                              toLogStr)
 
+import Database.HDBC
+import Database.HDBC.PostgreSQL
+
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
 import Handler.Common
-import Handler.Home
-import Handler.Comment
+import Handler.Survey
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -52,6 +54,11 @@ makeFoundation appSettings = do
         (if appMutableStatic appSettings then staticDevel else static)
         (appStaticDir appSettings)
 
+    appConnPool <- createPool
+        (ConnWrapper <$> connectPostgreSQL "host=localhost port=5432 dbname=letsseesurvey")
+        (disconnect)
+        1 16 8
+    
     -- Return the foundation
     return App {..}
 

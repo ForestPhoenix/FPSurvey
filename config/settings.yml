@@ -2,7 +2,8 @@
 # See https://github.com/yesodweb/yesod/wiki/Configuration#overriding-configuration-values-with-environment-variables
 
 static-dir:     "_env:STATIC_DIR:static"
-host:           "_env:HOST:*4" # any IPv4 host
+#host:           "_env:HOST:*4" # any IPv4 host
+host:           "127.0.0.1"
 port:           "_env:PORT:3000" # NB: The port `yesod devel` uses is distinct from this value. Set the `yesod devel` port from the command line.
 ip-from-header: "_env:IP_FROM_HEADER:false"
 
@@ -22,3 +23,11 @@ ip-from-header: "_env:IP_FROM_HEADER:false"
 
 copyright: Insert copyright statement here
 #analytics: UA-YOURCODE
+
+#dev-options:
+development: true
+detailed-logging: true
+should-log-all: true
+reload-templates: true
+mutable-static: true
+skip-combining: true

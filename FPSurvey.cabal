@@ -5,7 +5,7 @@ build-type:        Simple
 
 Flag dev
     Description:   Turn on development settings, like auto-reload templates.
-    Default:       False
+    Default:       True
 
 Flag library-only
     Description:   Build for use with "yesod devel"
@@ -20,8 +20,11 @@ library
                      Settings
                      Settings.StaticFiles
                      Handler.Common
-                     Handler.Home
-                     Handler.Comment
+                     Handler.Survey
+                     Forms.Survey
+                     Fields.Survey
+                     Database.DbAbstraction
+                     Model.Survey
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT
@@ -82,7 +85,9 @@ library
                  , resource-pool
                  , HDBC
                  , HDBC-postgresql
+                 , convertible
                  , haskelldb
+                 , MissingH
 
 executable         FPSurvey
     if flag(library-only)
