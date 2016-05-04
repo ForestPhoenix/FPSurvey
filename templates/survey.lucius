@@ -1,0 +1,32 @@
+.survey {
+    
+}
+
+.survey_section {
+    
+}
+
+.survey_group {
+    
+}
+
+.survey_group table {
+    width: 100%;
+    border: 1px solid #ccc;
+    border-collapse: collapse;
+}
+
+.survey_group table th {
+    background-color: #f1f1f1;
+    border-bottom: 1px solid #ccc;
+}
+
+.survey_group table tr:nth-child(2n) {
+    background-color: #f1f1f1;
+    border-bottom: 1px solid #ccc;
+}
+
+.survey_group table tr:nth-child(2n + 1) {
+    background-color: #fff;
+    border-bottom: 1px solid #ccc;
+}

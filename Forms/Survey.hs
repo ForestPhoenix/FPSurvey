@@ -24,14 +24,15 @@ surveyForm (sections) extra = do
     subFormsRes <- sequence (map (\form -> form $ toHtml $ Text.pack "") subForms)
     let (subRes, subWidgets) = unzip $ subFormsRes
     let widget = do
+            $(widgetFile "survey")
             [whamlet|
-            #{extra}
-            <div>
-                Enter your token here: ^{fvInput userView}
-                <ol>
-                    $forall subWidget <- subWidgets
-                        <li> ^{subWidget}
-                <input type=submit value="Submit Survey">
+                #{extra}
+                <div class="survey">
+                    Enter your token here: ^{fvInput userView}
+                    <ol>
+                        $forall subWidget <- subWidgets
+                            ^{subWidget}
+                    <input type=submit value="Submit Survey">
             |]
     let result = (,) <$> userRes <*> shiftApplicativeList subRes
     return (result, widget)
@@ -45,14 +46,13 @@ sectionForm (section, groups) _ = do
     let subForms = map groupForm groups
     subFormsRes <- sequence (map (\form -> form $ toHtml $ Text.pack "") subForms)
     let (subRes, subWidgets) = unzip subFormsRes
-    let widget = do
-            [whamlet|
-            <div>
-                <h2> #{section_title section}
-                <ol> 
-                    $forall subWidget <- subWidgets
-                        <li> ^{subWidget}
-            |]
+    let widget = [whamlet|
+        <div class="survey_section">
+            <h2> <li> #{section_title section}
+            <ol> 
+                $forall subWidget <- subWidgets
+                    <li> ^{subWidget}
+        |]
     let result = shiftApplicativeList subRes
     return (result, widget)
 
@@ -68,12 +68,12 @@ groupForm (qGroup, qtype, questions, ratings) _ = do
     let (subRes, subWidgets) = unzip subFormsRes
     let widget = case qtype_display_variant qtype of
             Radio -> [whamlet|
-                <div>
+                <div class="survey_group">
                     #{qgroup_header qGroup}
                     <table>
                         <thead>
                             <tr> 
-                                <th> question
+                                <th>
                                 $forall header <- map rating_value ratings
                                     <th> #{header}
                         <tbody>
@@ -81,12 +81,12 @@ groupForm (qGroup, qtype, questions, ratings) _ = do
                                 <tr> ^{subWidget}
                 |]
             RadioWith _ -> [whamlet|
-                <div>
+                <div class="survey_group">
                     #{qgroup_header qGroup}
                     <table>
                         <thead>
                             <tr> 
-                                <th> question
+                                <th>
                                 $forall header <- map rating_value ratings
                                     <th> #{header}
                                 <th> other answer
@@ -95,12 +95,12 @@ groupForm (qGroup, qtype, questions, ratings) _ = do
                                 <tr> ^{subWidget}
                 |]
             _ -> [whamlet|
-                <div>
+                <div class="survey_group">
                     $if (qgroup_header qGroup) == ""
                         $forall subWidget <- subWidgets
                             ^{subWidget}
                     $else
-                        <h3> #{qgroup_header qGroup}
+                        #{qgroup_header qGroup}
                         <ol> 
                             $forall subWidget <- subWidgets
                                 <li> ^{subWidget}
@@ -141,7 +141,7 @@ questionForm IntegerInput _ question _ = do
             [whamlet|
                 #{question_text question} ^{fvInput ratingView}
             |]
-    let result = (,) question <$> (InputOther . pack . show <$> intRes)
+    let result = (,) question <$> (InputOther . pack . show <$> (intRes :: FormResult Int))
     return (result, widget)
 
 questionForm TextInput _ question _ = do
@@ -164,7 +164,7 @@ questionForm (RadioWith IntegerInput) ratings question _ = do
                 <td> ^{fvInput subView}
             |]
     let ratingInput = fmap (fmap InputRating) ratingRes
-    let otherInput = InputOther . pack . show <$> subRes
+    let otherInput = InputOther . pack . show <$> (subRes :: FormResult Int)
     let result = (,) question <$> (fromMaybe <$> otherInput <*> ratingInput)
     return (result, widget)
 
