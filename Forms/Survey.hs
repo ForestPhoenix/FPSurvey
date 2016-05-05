@@ -28,7 +28,10 @@ surveyForm (sections) extra = do
             [whamlet|
                 #{extra}
                 <div class="survey">
-                    Enter your token here: ^{fvInput userView}
+                    <div class="survey_group"> 
+                        <span class="survey_group_header"> Dein Zugangscode:
+                        <br>
+                        ^{fvInput userView}
                     <ol>
                         $forall subWidget <- subWidgets
                             ^{subWidget}
@@ -51,7 +54,7 @@ sectionForm (section, groups) _ = do
             <h2> <li> #{section_title section}
             <ol> 
                 $forall subWidget <- subWidgets
-                    <li> ^{subWidget}
+                    ^{subWidget}
         |]
     let result = shiftApplicativeList subRes
     return (result, widget)
@@ -68,42 +71,45 @@ groupForm (qGroup, qtype, questions, ratings) _ = do
     let (subRes, subWidgets) = unzip subFormsRes
     let widget = case qtype_display_variant qtype of
             Radio -> [whamlet|
-                <div class="survey_group">
-                    #{qgroup_header qGroup}
-                    <table>
-                        <thead>
-                            <tr> 
-                                <th>
-                                $forall header <- map rating_value ratings
-                                    <th> #{header}
-                        <tbody>
-                            $forall subWidget <- subWidgets
-                                <tr> ^{subWidget}
+                <li>
+                    <div class="survey_group">
+                        <span class="survey_group_header"> #{qgroup_header qGroup}
+                        <table>
+                            <thead>
+                                <tr> 
+                                    <th>
+                                    $forall header <- map rating_value ratings
+                                        <th> #{header}
+                            <tbody>
+                                $forall subWidget <- subWidgets
+                                    <tr> ^{subWidget}
                 |]
             RadioWith _ -> [whamlet|
-                <div class="survey_group">
-                    #{qgroup_header qGroup}
-                    <table>
-                        <thead>
-                            <tr> 
-                                <th>
-                                $forall header <- map rating_value ratings
-                                    <th> #{header}
-                                <th> other answer
-                        <tbody>
-                            $forall subWidget <- subWidgets
-                                <tr> ^{subWidget}
+                <li>
+                    <div class="survey_group">
+                        <span class="survey_group_header"> #{qgroup_header qGroup}
+                        <table>
+                            <thead>
+                                <tr> 
+                                    <th>
+                                    $forall header <- map rating_value ratings
+                                        <th> #{header}
+                                    <th> other answer
+                            <tbody>
+                                $forall subWidget <- subWidgets
+                                    <tr> ^{subWidget}
                 |]
             _ -> [whamlet|
-                <div class="survey_group">
-                    $if (qgroup_header qGroup) == ""
-                        $forall subWidget <- subWidgets
-                            ^{subWidget}
-                    $else
-                        #{qgroup_header qGroup}
-                        <ol> 
+                <li>
+                    <div class="survey_group">
+                        $if (qgroup_header qGroup) == ""
                             $forall subWidget <- subWidgets
-                                <li> ^{subWidget}
+                                ^{subWidget}
+                        $else
+                            <h3> #{qgroup_header qGroup}
+                            <ol> 
+                                $forall subWidget <- subWidgets
+                                    <li> ^{subWidget}
                 |]
     let result = foldFunctor subRes
     return (result, widget)
@@ -120,7 +126,9 @@ questionForm DropDown ratings question _ = do
     (ratingRes, ratingView) <- mreq (selectFieldList ratingList) "This is not used" Nothing
     let widget = do
             [whamlet|
-                #{question_text question} ^{fvInput ratingView}
+                #{question_text question}
+                <br>
+                ^{fvInput ratingView}
             |]
     let result = (,) question <$> (InputRating <$> ratingRes)
     return (result, widget)
@@ -139,7 +147,9 @@ questionForm IntegerInput _ question _ = do
     (intRes, ratingView) <- mreq intField "This is not used" Nothing
     let widget = do
             [whamlet|
-                #{question_text question} ^{fvInput ratingView}
+                #{question_text question}
+                <br>
+                ^{fvInput ratingView}
             |]
     let result = (,) question <$> (InputOther . pack . show <$> (intRes :: FormResult Int))
     return (result, widget)
@@ -148,40 +158,39 @@ questionForm TextInput _ question _ = do
     (intRes, ratingView) <- mreq textField "This is not used" Nothing
     let widget = do
             [whamlet|
-                #{question_text question} ^{fvInput ratingView}
+                #{question_text question}
+                <br>
+                ^{fvInput ratingView}
             |]
     let result = (,) question <$> (InputOther <$> intRes)
     return (result, widget)
 
 questionForm (RadioWith IntegerInput) ratings question _ = do
-    let ratingList = (map Just ratings) ++ [Nothing]
-    (ratingRes, ratingView) <- mreq (radioTdField ratingList) "This is not used" Nothing
     (subRes, subView) <- mreq intField "This is not used" Nothing
+    let convertedSubRes = pack . show <$> (subRes :: FormResult Int)
+    (ratingRes, ratingView) <- mreq (radioTdFieldWithOther ratings subView convertedSubRes) "This is not used" Nothing
     let widget = do
             [whamlet|
                 <td> #{question_text question}
                 ^{fvInput ratingView}
-                <td> ^{fvInput subView}
             |]
-    let ratingInput = fmap (fmap InputRating) ratingRes
-    let otherInput = InputOther . pack . show <$> (subRes :: FormResult Int)
-    let result = (,) question <$> (fromMaybe <$> otherInput <*> ratingInput)
+    let result = (,) question <$> (fieldSoToForm <$> ratingRes)
     return (result, widget)
 
 questionForm (RadioWith TextInput) ratings question _ = do
-    let ratingList = (map Just ratings) ++ [Nothing]
-    (ratingRes, ratingView) <- mreq (radioTdField ratingList) "This is not used" Nothing
     (subRes, subView) <- mreq textField "This is not used" Nothing
+    (ratingRes, ratingView) <- mreq (radioTdFieldWithOther ratings subView subRes) "This is not used" Nothing
     let widget = do
             [whamlet|
                 <td> #{question_text question}
                 ^{fvInput ratingView}
-                <td> ^{fvInput subView}
             |]
-    let ratingInput = fmap (fmap InputRating) ratingRes
-    let otherInput = InputOther <$> subRes
-    let result = (,) question <$> (fromMaybe <$> otherInput <*> ratingInput)
+    let result = (,) question <$> (fieldSoToForm <$> ratingRes)
     return (result, widget)
 
 questionForm (RadioWith _) _ _ _ = 
     error "RadioWith used with invalid sub-input"
+
+fieldSoToForm :: (SqlId a) => SelectWithOther (Rating a) Text -> SurveyInput a
+fieldSoToForm (SelectInput r) = InputRating r
+fieldSoToForm (OtherInput  o) = InputOther o

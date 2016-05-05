@@ -1,5 +1,17 @@
+body {
+    line-height: 1.42857143;
+}
+
+.survey_header {
+    text-align: center;
+}
+
 .survey {
     
+}
+
+.survey_token_header {
+    font-size: 120%;
 }
 
 .survey_section {
@@ -7,7 +19,8 @@
 }
 
 .survey_group {
-    
+    padding-top: 0.3em;
+    padding-bottom: 0.3em;
 }
 
 .survey_group table {
@@ -17,16 +30,35 @@
 }
 
 .survey_group table th {
-    background-color: #f1f1f1;
+    background-color: #f9f9f9;
+    border-bottom: 1px solid #ccc;
+    padding: 0.5em;
+}
+
+.survey_group table tr {
     border-bottom: 1px solid #ccc;
 }
 
 .survey_group table tr:nth-child(2n) {
-    background-color: #f1f1f1;
-    border-bottom: 1px solid #ccc;
+    background-color: #f9f9f9;
 }
 
 .survey_group table tr:nth-child(2n + 1) {
     background-color: #fff;
-    border-bottom: 1px solid #ccc;
+}
+
+.survey_group table tr td {
+    padding: 0.5em;
+}
+
+.survey_group input {
+    width: 100%;
+}
+
+.survey_group select {
+    width: 100%;
+}
+
+.survey_group_header {
+    font-size: 120%;
 }
