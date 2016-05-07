@@ -1,6 +1,8 @@
 # FPSurvey
 FPSurvey is a small web-survey written with Haskell and Yesod.
 
+[![Build Status](https://travis-ci.org/ForestPhoenix/FPSurvey.svg?branch=master)](https://travis-ci.org/ForestPhoenix/FPSurvey)
+
 Requirements:
 - The haskell stack from http://docs.haskellstack.org/en/stable/README/
 - PostgreSQL from http://www.postgresql.org/download/
