@@ -71,10 +71,10 @@ groupForm (qGroup, qtype, questions, ratings) _ = do
     let (subRes, subWidgets) = unzip subFormsRes
     let widget = case qtype_display_variant qtype of
             Radio -> [whamlet|
-                <li>
-                    <div class="survey_group">
+                <li class="survey_group">
+                    <div>
                         <span class="survey_group_header"> #{qgroup_header qGroup}
-                        <table>
+                        <table class="survey_radio">
                             <thead>
                                 <tr> 
                                     <th>
@@ -85,10 +85,10 @@ groupForm (qGroup, qtype, questions, ratings) _ = do
                                     <tr> ^{subWidget}
                 |]
             RadioWith _ -> [whamlet|
-                <li>
-                    <div class="survey_group">
+                <li class="survey_group">
+                    <div>
                         <span class="survey_group_header"> #{qgroup_header qGroup}
-                        <table>
+                        <table class="survey_radio">
                             <thead>
                                 <tr> 
                                     <th>
@@ -100,8 +100,8 @@ groupForm (qGroup, qtype, questions, ratings) _ = do
                                     <tr> ^{subWidget}
                 |]
             _ -> [whamlet|
-                <li>
-                    <div class="survey_group">
+                <li class="survey_group">
+                    <div>
                         $if (qgroup_header qGroup) == ""
                             $forall subWidget <- subWidgets
                                 ^{subWidget}
@@ -126,7 +126,7 @@ questionForm DropDown ratings question _ = do
     (ratingRes, ratingView) <- mreq (selectFieldList ratingList) "This is not used" Nothing
     let widget = do
             [whamlet|
-                #{question_text question}
+                <span class="survey_group_header"> #{question_text question}
                 <br>
                 ^{fvInput ratingView}
             |]
@@ -134,7 +134,7 @@ questionForm DropDown ratings question _ = do
     return (result, widget)
 
 questionForm Radio ratings question _ = do
-    (ratingRes, ratingView) <- mreq (radioTdField ratings) "This is not used" Nothing
+    (ratingRes, ratingView) <- mreq (radioTdField $ zip ratings $ repeat "") "This is not used" Nothing
     let widget = do
             [whamlet|
                 <td> #{question_text question}
@@ -143,11 +143,23 @@ questionForm Radio ratings question _ = do
     let result = (,) question <$> (InputRating <$> ratingRes)
     return (result, widget)
 
+questionForm RadioInline ratings question _ = do
+    (ratingRes, ratingView) <- mreq (radioTdField $ zip ratings $ map (toHtml . rating_value) ratings) "This is not used" Nothing
+    let widget = do
+            [whamlet|
+                <span class="survey_group_header"> #{question_text question}
+                <table> <tbody> <tr>
+                    ^{fvInput ratingView}
+            |]
+    let result = (,) question <$> (InputRating <$> ratingRes)
+    return (result, widget)
+
+
 questionForm IntegerInput _ question _ = do
     (intRes, ratingView) <- mreq intField "This is not used" Nothing
     let widget = do
             [whamlet|
-                #{question_text question}
+                <span class="survey_group_header"> #{question_text question}
                 <br>
                 ^{fvInput ratingView}
             |]
@@ -158,7 +170,7 @@ questionForm TextInput _ question _ = do
     (intRes, ratingView) <- mreq textField "This is not used" Nothing
     let widget = do
             [whamlet|
-                #{question_text question}
+                <span class="survey_group_header"> #{question_text question}
                 <br>
                 ^{fvInput ratingView}
             |]

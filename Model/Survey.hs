@@ -22,13 +22,21 @@ import Database.DbAbstraction
 
 --TODO: convert model to HaskellDB
 
-data DisplayVariant = Radio | DropDown | IntegerInput | TextInput | RadioWith DisplayVariant deriving (Eq, Show, Read, Typeable)
+data DisplayVariant = 
+    Radio |
+    RadioInline |
+    DropDown |
+    IntegerInput |
+    TextInput |
+    RadioWith DisplayVariant
+        deriving (Eq, Show, Read, Typeable)
 
 instance Convertible String DisplayVariant where
     safeConvert "radio"         = Right Radio
     safeConvert "dropdown"      = Right DropDown
     safeConvert "integer_input" = Right IntegerInput
     safeConvert "text_input"    = Right TextInput
+    safeConvert "radio_inline"  = Right RadioInline
     safeConvert (stripPrefix "radio_with_" -> Just rest)
                 = RadioWith <$> safeConvert rest
     safeConvert str = convError "No DisplayVariant for Value" str
@@ -42,6 +50,7 @@ instance Convertible DisplayVariant String where
     safeConvert DropDown = Right "dropdown"
     safeConvert IntegerInput = Right "integer_input"
     safeConvert TextInput = Right "text_input"
+    safeConvert RadioInline = Right "radio_inline"
     safeConvert (RadioWith otherInput) = ((++) "radio_with_") <$> safeConvert otherInput
 
 

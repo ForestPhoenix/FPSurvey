@@ -3,8 +3,9 @@
 
 static-dir:     "_env:STATIC_DIR:static"
 #host:           "_env:HOST:*4" # any IPv4 host
-host:           "127.0.0.1"
-port:           "_env:PORT:3000" # NB: The port `yesod devel` uses is distinct from this value. Set the `yesod devel` port from the command line.
+host:           "*"
+port:           "_env:PORT:3000"
+# NB: The port `yesod devel` uses is distinct from this value. Set the `yesod devel` port from the command line.
 ip-from-header: "_env:IP_FROM_HEADER:false"
 
 # Default behavior: determine the application root from the request headers.
@@ -14,20 +15,12 @@ ip-from-header: "_env:IP_FROM_HEADER:false"
 # Optional values with the following production defaults.
 # In development, they default to the inverse.
 #
-# development: false
-# detailed-logging: false
-# should-log-all: false
-# reload-templates: false
-# mutable-static: false
-# skip-combining: false
+development: false
+detailed-logging: false
+should-log-all: false
+reload-templates: false
+mutable-static: false
+skip-combining: false
 
-copyright: Insert copyright statement here
+copyright: copyright (c) 2016 Lars Hollenbach
 #analytics: UA-YOURCODE
-
-#dev-options:
-development: true
-detailed-logging: true
-should-log-all: true
-reload-templates: true
-mutable-static: true
-skip-combining: true

@@ -23,23 +23,23 @@ body {
     padding-bottom: 0.3em;
 }
 
-.survey_group table {
+.survey_radio {
     width: 100%;
     border: 1px solid #ccc;
     border-collapse: collapse;
 }
 
-.survey_group table th {
+.survey_radio th {
     background-color: #f9f9f9;
     border-bottom: 1px solid #ccc;
     padding: 0.5em;
 }
 
-.survey_group table tr {
+.survey_radio tr {
     border-bottom: 1px solid #ccc;
 }
 
-.survey_group table tr:nth-child(2n) {
+.survey_radio tr:nth-child(2n) {
     background-color: #f9f9f9;
 }
 
@@ -47,18 +47,15 @@ body {
     background-color: #fff;
 }
 
-.survey_group table tr td {
+.survey_radio tr td {
     padding: 0.5em;
 }
 
-.survey_group input {
-    width: 100%;
-}
-
-.survey_group select {
+.survey_group div > * {
     width: 100%;
 }
 
 .survey_group_header {
-    font-size: 120%;
+    font-size: 110%;
+    font-weight: bold;
 }
