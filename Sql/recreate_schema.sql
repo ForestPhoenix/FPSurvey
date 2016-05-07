@@ -1,4 +1,4 @@
-DROP SCHEMA public CASCADE;
+﻿DROP SCHEMA public CASCADE;
 CREATE SCHEMA public;
 
 CREATE TABLE participant
@@ -28,6 +28,7 @@ CREATE TABLE qgroup
 	qgroup_id serial PRIMARY KEY,
 	qgroup_sort integer NOT NULL DEFAULT -1,
 	qgroup_header text NOT NULL,
+	qgroup_scale text NOT NULL, -- 'nominal', 'ordinal', 'metric'
 	qgroup_qtype_id integer NOT NULL,
 	qgroup_section_id integer NOT NULL,
 	
