@@ -19,7 +19,6 @@ CREATE INDEX ON section(section_sort);
 CREATE TABLE qtype
 (
   qtype_id serial PRIMARY KEY,
-  qtype_is_freeform boolean NOT NULL DEFAULT false,
   qtype_display_variant text NOT NULL
 );
 

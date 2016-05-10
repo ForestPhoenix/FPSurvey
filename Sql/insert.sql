@@ -6,14 +6,14 @@ TRUNCATE question CASCADE;
 TRUNCATE rating CASCADE;
 TRUNCATE section CASCADE;
 
-INSERT INTO qtype(qtype_id, qtype_is_freeform, qtype_display_variant) VALUES
-	(1, false, 'dropdown'),
-	(2, false, 'radio'), 
-	(3, true, 'integer_input'),
-	(4, true, 'radio_with_text_input'),
-	(5, true, 'text_input'),
-	(6, true, 'radio_with_integer_input'),
-	(7, false, 'radio_inline');
+INSERT INTO qtype(qtype_id, qtype_display_variant) VALUES
+	(1, 'dropdown'),
+	(2, 'radio'), 
+	(3, 'integer_input'),
+	(4, 'radio_with_text_input'),
+	(5, 'text_input'),
+	(6, 'radio_with_integer_input'),
+	(7, 'radio_inline');
 
 INSERT INTO section(section_sort, section_title)
 	VALUES(1, 'Personelle Fragen');

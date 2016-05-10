@@ -24,7 +24,7 @@ library
                      Forms.Survey
                      Fields.Survey
                      Database.DbAbstraction
-                     Model.Survey
+                     Model
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT
@@ -82,11 +82,10 @@ library
                  , time
                  , case-insensitive
                  , wai
+                 , opaleye
                  , resource-pool
-                 , HDBC
-                 , HDBC-postgresql
-                 , convertible
-                 , haskelldb
+                 , postgresql-simple
+                 , product-profunctors
                  , MissingH
 
 executable         FPSurvey

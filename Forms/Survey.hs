@@ -1,8 +1,5 @@
-module Forms.Survey (
-    SurveyInput(..),
-    surveyForm
-) where
-
+module Forms.Survey where
+{-
 import Import
 
 import Database.DbAbstraction
@@ -206,3 +203,4 @@ questionForm (RadioWith _) _ _ _ =
 fieldSoToForm :: (SqlId a) => SelectWithOther (Rating a) Text -> SurveyInput a
 fieldSoToForm (SelectInput r) = InputRating r
 fieldSoToForm (OtherInput  o) = InputOther o
+-}

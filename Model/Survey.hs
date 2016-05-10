@@ -1,17 +1,5 @@
-module Model.Survey (
-    Participant(..),
-    Section(..),
-    DisplayVariant(..),
-    QType(..),
-    QGroup(..),
-    Question(..),
-    Rating(..),
-
-    UntakenSurvey,
-    UntakenSurveySection,
-    UntakenSurveyGroup,
-    convertUntakenSurvey,
-) where
+module Model.Survey where
+{-
 
 import Import
 
@@ -89,18 +77,15 @@ instance SqlRow Section where
 
 data (SqlId a) => QType a = QType {
     qtype_id :: a,
-    qtype_is_freeform :: Bool,
     qtype_display_variant :: DisplayVariant
 } deriving (Eq, Show)
 
 instance SqlRow QType where
     safeFromSqlRow row = QType <$>
         valueFromMap row "qtype_id" <*>
-        convertFromRow row "qtype_is_freeform" <*>
         convertFromRow row "qtype_display_variant"
 
     toRowAL qtype = [
-        ("qtype_is_freeform", toSql $ qtype_is_freeform qtype),
         ("qtype_display_variant", toSql $ qtype_display_variant qtype)
         ]
 
@@ -186,3 +171,4 @@ convertUntakenSurvey sections types ratings = mergeLeft $ zip preMergedSections 
         mergedRatings = mergeLeft ratings
         (preMergedSections, mergedGroups) = unzip mergedSectionsAndGroups
         (mergedSectionsAndGroups, questions) = unzip $ mergeLeft sections
+        -}

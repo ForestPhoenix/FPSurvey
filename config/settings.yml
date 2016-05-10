@@ -15,12 +15,21 @@ ip-from-header: "_env:IP_FROM_HEADER:false"
 # Optional values with the following production defaults.
 # In development, they default to the inverse.
 #
-development: false
-detailed-logging: false
-should-log-all: false
-reload-templates: false
-mutable-static: false
-skip-combining: false
+#development: false
+#detailed-logging: false
+#should-log-all: false
+#reload-templates: false
+#mutable-static: false
+#skip-combining: false
+
+database:
+  user:     "_env:PGUSER:"
+  password: "_env:PGPASS:"
+  host:     "_env:PGHOST:localhost"
+  port:     "_env:PGPORT:5432"
+  # See config/test-settings.yml for an override during tests
+  database: "_env:PGDATABASE:letsseesurvey"
+  poolsize: "_env:PGPOOLSIZE:10"
 
 copyright: copyright (c) 2016 Lars Hollenbach
 #analytics: UA-YOURCODE
