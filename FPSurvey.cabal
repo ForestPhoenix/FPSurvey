@@ -23,7 +23,7 @@ library
                      Handler.Survey
                      Forms.Survey
                      Fields.Survey
-                     Database.DbAbstraction
+                     Query.Survey
                      Model
 
     if flag(dev) || flag(library-only)
@@ -85,6 +85,7 @@ library
                  , opaleye
                  , resource-pool
                  , postgresql-simple
+                 , profunctors
                  , product-profunctors
                  , MissingH
 

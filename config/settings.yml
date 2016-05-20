@@ -22,14 +22,7 @@ ip-from-header: "_env:IP_FROM_HEADER:false"
 #mutable-static: false
 #skip-combining: false
 
-database:
-  user:     "_env:PGUSER:"
-  password: "_env:PGPASS:"
-  host:     "_env:PGHOST:localhost"
-  port:     "_env:PGPORT:5432"
-  # See config/test-settings.yml for an override during tests
-  database: "_env:PGDATABASE:letsseesurvey"
-  poolsize: "_env:PGPOOLSIZE:10"
+database: "_env:PG_CONNECTION:dbname=letsseesurvey"
 
 copyright: copyright (c) 2016 Lars Hollenbach
 #analytics: UA-YOURCODE

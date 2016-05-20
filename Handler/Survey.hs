@@ -2,8 +2,8 @@ module Handler.Survey where
 
 import Import
 
-import Database.DbAbstraction
-import Model.Survey
+import Model
+import Query.Survey
 import Forms.Survey
 
 getSurveyR :: Handler Html
@@ -11,6 +11,11 @@ getSurveyR = error "NY!"
 
 postSurveyR :: Handler Html
 postSurveyR = error "NY!"
+
+-- runSurveyR :: Handler Html
+-- runSurveyR = do
+--     app <- getYesod
+--     let pool = appConnPool app
 
 -- runSurveyR :: Handler Html
 -- runSurveyR = do

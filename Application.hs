@@ -27,6 +27,8 @@ import Network.Wai.Middleware.RequestLogger (Destination (Logger),
 import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
                                              toLogStr)
 
+import qualified Database.PostgreSQL.Simple as PGS
+
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
 import Handler.Common
@@ -51,7 +53,9 @@ makeFoundation appSettings = do
         (if appMutableStatic appSettings then staticDevel else static)
         (appStaticDir appSettings)
 
-    
+    appConnPool <- createPool
+        (PGS.connectPostgreSQL $ fromString $ appDatabaseConf appSettings)
+        PGS.close 1 10 10
     
     -- Return the foundation
     return App {..}
