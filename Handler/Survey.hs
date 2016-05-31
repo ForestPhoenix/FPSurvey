@@ -7,15 +7,42 @@ import Query.Survey
 import Forms.Survey
 
 getSurveyR :: Handler Html
-getSurveyR = error "NY!"
+getSurveyR = runSurveyR
 
 postSurveyR :: Handler Html
-postSurveyR = error "NY!"
+postSurveyR = runSurveyR
 
--- runSurveyR :: Handler Html
--- runSurveyR = do
---     app <- getYesod
---     let pool = appConnPool app
+runSurveyR :: Handler Html
+runSurveyR = do
+    app <- getYesod
+    let pool = appConnPool app
+    rawSurvey <- liftIO $ withResource pool $ 
+        (\conn -> (runQuery conn querySurvey) :: IO [(SectionData, QgroupDataWrapped [])])
+    let survey = fmap (\(section, qgroups) -> (section, zipQgroup qgroups)) rawSurvey
+    ((res, widget), enctype) <- runFormPost $ surveyForm survey
+    case res of
+        FormMissing -> do
+            defaultLayout 
+                [whamlet|
+                    <h1 class="survey_header"> Wie wohl fühlst du dich am OSZ IMT ?
+                    <form method=post action=@{SurveyR} enctype=#{enctype}> ^{widget}
+                |]
+        FormFailure errorMessages -> do
+            defaultLayout
+                [whamlet|
+                    $forall errorMessage <- errorMessages
+                        <br> An error occured: #{errorMessage}
+                |]
+        FormSuccess surveyInput -> do
+                defaultLayout $ [whamlet|Coming soon!|]
+--             submitResult <- liftIO $ withResource pool $ submitSurvey surveyInput
+--             case submitResult of
+--                  Just err -> defaultLayout [whamlet| an error occured: #{err}|]
+--                  Nothing -> defaultLayout
+--                         [whamlet|
+--                             Thanks for participating!
+--                             You can overwrite you answers by re-using your user token.
+--                         |]
 
 -- runSurveyR :: Handler Html
 -- runSurveyR = do

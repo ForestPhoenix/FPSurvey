@@ -1,27 +1,23 @@
 module Forms.Survey where
-{-
+
 import Import
 
-import Database.DbAbstraction
-import Model.Survey
-import qualified Data.Text as Text
-
+import Model
 import Fields.Survey
 
-data (SqlId sqlId) => SurveyInput sqlId = InputRating (Rating sqlId) | InputOther Text
+data SurveyInput = InputRating RatingIdData | InputOther Text
 
-surveyForm :: (SqlId a) =>
-    UntakenSurvey a ->
+surveyForm :: 
+    [(SectionData, [QgroupData])] ->
     Html ->
-    MForm Handler (FormResult (Text, [(Question a, SurveyInput a)]), Widget)
+    MForm Handler (FormResult (Text, [(QuestionIdData, SurveyInput)]), Widget)
     
-surveyForm (sections) extra = do
-    let subForms = map sectionForm sections
+surveyForm survey extra = do
+    let subForms = fmap sectionForm survey
     (userRes, userView) <- mreq textField "" Nothing
-    subFormsRes <- sequence (map (\form -> form $ toHtml $ Text.pack "") subForms)
+    subFormsRes <- sequence (fmap (\form -> form $ toHtml ("" :: Text)) subForms)
     let (subRes, subWidgets) = unzip $ subFormsRes
-    let widget = do
-            $(widgetFile "survey")
+    let widget =
             [whamlet|
                 #{extra}
                 <div class="survey">
@@ -34,34 +30,36 @@ surveyForm (sections) extra = do
                             ^{subWidget}
                     <input type=submit value="Submit Survey">
             |]
-    let result = (,) <$> userRes <*> shiftApplicativeList subRes
+    let result = (,) <$> userRes <*> mconcat subRes
     return (result, widget)
 
-sectionForm :: (SqlId a) =>
-    UntakenSurveySection a ->
+sectionForm ::
+    (SectionData, [QgroupData]) ->
     Html ->
-    MForm Handler (FormResult [(Question a, SurveyInput a)], Widget)
+    MForm Handler (FormResult [(QuestionIdData, SurveyInput)], Widget)
     
 sectionForm (section, groups) _ = do
     let subForms = map groupForm groups
-    subFormsRes <- sequence (map (\form -> form $ toHtml $ Text.pack "") subForms)
+    subFormsRes <- sequence (map (\form -> form $ toHtml ("" :: Text)) subForms)
     let (subRes, subWidgets) = unzip subFormsRes
     let widget = [whamlet|
         <div class="survey_section">
-            <h2> <li> #{section_title section}
+            <h2> <li> #{sectionTitle section}
             <ol> 
                 $forall subWidget <- subWidgets
                     ^{subWidget}
         |]
-    let result = shiftApplicativeList subRes
+    let result = mconcat subRes
     return (result, widget)
 
-groupForm :: (SqlId a) =>
-    UntakenSurveyGroup a ->
+groupForm ::
+    QgroupData ->
     Html ->
-    MForm Handler (FormResult [(Question a, SurveyInput a)], Widget)
+    MForm Handler (FormResult [(QuestionIdData, SurveyInput)], Widget)
     
-groupForm (qGroup, qtype, questions, ratings) _ = do
+groupForm = error "NYI!"
+
+{-groupForm (qGroup, qtype, questions, ratings) _ = do
     let dvar = qtype_display_variant qtype
     let subForms = map (questionForm dvar ratings) questions
     subFormsRes <- sequence (map (\form -> form $ toHtml $ Text.pack "") subForms)

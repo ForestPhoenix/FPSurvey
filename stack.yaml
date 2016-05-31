@@ -3,8 +3,6 @@ extra-package-dbs: []
 packages:
 - '.'
 extra-deps:
-- haskelldb-2.2.4
-- haskelldb-th-2.0
-- text-1.2.2.0
-- yaml-0.8.16
+- OneTuple-0.2.1
+- tuple-0.3.0.2
 resolver: lts-5.8

@@ -1,8 +1,10 @@
+
 module Model where
 
 import Import
 import Opaleye as OE
 import Data.Profunctor.Product.TH (makeAdaptorAndInstance)
+import Data.Profunctor.Product
 
 -- table participant
 
@@ -14,7 +16,7 @@ $(makeAdaptorAndInstance "pParticipant" ''Participant')
 
 newtype ParticipantId' a = ParticipantId { unParticipantId :: a } deriving (Show, Eq)
 $(makeAdaptorAndInstance "pParticipantId" ''ParticipantId')
-    
+
 type ParticipantIdColumn = (ParticipantId' (Column PGInt4))
 type ParticipantWriteIdColumn = (ParticipantId' (Maybe (Column PGInt4)))
 
@@ -28,7 +30,7 @@ participantTable = Table "participant" $
     }
 
 zipParticipant :: Participant' (ParticipantId' [a]) [b] -> [Participant' (ParticipantId' a) b]
-zipParticipant (Participant a b) = zipWith Participant (fmap ParticipantId $ unParticipantId a) b
+zipParticipant (Participant a b) = zipWith Participant (ParticipantId <$> unParticipantId a) b
 
 -- table section
 
@@ -45,10 +47,10 @@ $(makeAdaptorAndInstance "pSectionId" ''SectionId')
 type SectionIdColumn = SectionId' (Column PGInt4)
 type SectionWriteIdColumn = (SectionId' (Maybe (Column PGInt4)))
 
-type SectionColsWrapped w = (Section' SectionIdColumn (w PGInt4) (w PGText))
-type SectionColumns = SectionColsWrapped Column
+type SectionColumns = (Section' (SectionId' (Column PGInt4)) (Column PGInt4) (Column PGText))
+type SectionData = Section' (SectionId' Int) Int String
 
-sectionTable :: Table 
+sectionTable :: Table
     (Section' (SectionId' (Maybe (Column PGInt4))) (Column PGInt4) (Column PGText))
     SectionColumns
 sectionTable = Table "section" $
@@ -59,7 +61,13 @@ sectionTable = Table "section" $
     }
 
 zipSection :: Section' (SectionId' [a]) [b] [c] -> [Section' (SectionId' a) b c]
-zipSection (Section a b c) = zipWith3 Section (fmap SectionId $ unSectionId a) b c
+zipSection (Section a b c) = zipWith3 Section (SectionId <$> unSectionId a) b c
+
+liftSectionIds :: (ProductProfunctor p) =>
+    p a0 b0 -> p a1 b1 -> p a2 b2 ->
+    p (Section' (SectionId' a0) a1 a2) (Section' (SectionId' b0) b1 b2)
+liftSectionIds q0 q1 q2 =
+    pSection $ Section (dimap unSectionId SectionId q0) q1 q2
 
 -- table qtype
 
@@ -75,9 +83,14 @@ $(makeAdaptorAndInstance "pQtypeId" ''QtypeId')
 type QtypeIdColumn = QtypeId' (Column PGInt4)
 type QtypeWriteIdColumn = (QtypeId' (Maybe (Column PGInt4)))
 
+type QtypeColumnsWrapped w = Qtype'
+    (QtypeId' (w PGInt4))
+    (w PGText)
+type QtypeColumns = QtypeColumnsWrapped Column
+
 qtypeTable :: Table
     (Qtype' QtypeWriteIdColumn (Column PGText))
-    (Qtype' QtypeIdColumn (Column PGText))
+    QtypeColumns
 qtypeTable = Table "qtype" $
     pQtype Qtype {
         qtypeId             = pQtypeId . QtypeId $ OE.optional "qtype_id",
@@ -85,7 +98,7 @@ qtypeTable = Table "qtype" $
     }
 
 zipQtype :: Qtype' (QtypeId' [a]) [b] -> [Qtype' (QtypeId' a) b]
-zipQtype (Qtype a b) = zipWith Qtype (fmap QtypeId $ unQtypeId a) b
+zipQtype (Qtype a b) = zipWith Qtype (QtypeId <$> unQtypeId a) b
 
 -- table qgroup
 
@@ -105,9 +118,33 @@ $(makeAdaptorAndInstance "pQgroupId" ''QgroupId')
 type QgroupIdColumn = (QgroupId' (Column PGInt4))
 type QgroupWriteIdColumn = (QgroupId' (Maybe (Column PGInt4)))
 
-qgroupTable :: Table 
-    (Qgroup' QgroupWriteIdColumn (Column PGInt4) (Column PGText) (Column PGText) (QtypeIdColumn) (SectionIdColumn))
-    (Qgroup' QgroupIdColumn (Column PGInt4) (Column PGText) (Column PGText) (QtypeIdColumn) (SectionIdColumn))
+type QgroupColumnsWrapped w = Qgroup'
+    (QgroupId' (w PGInt4))
+    (w PGInt4)
+    (w PGText)
+    (w PGText)
+    (QtypeId' (w PGInt4))
+    (SectionId' (w PGInt4))
+type QgroupColumns = QgroupColumnsWrapped Column
+
+type QgroupDataWrapped w = Qgroup'
+    (QgroupId' (w Int))
+    (w Int)
+    (w Text)
+    (w Text)
+    (QtypeId' (w Int))
+    (SectionId' (w Int))
+type QgroupData = Qgroup'
+    (QgroupId' Int)
+    Int
+    Text
+    Text
+    (QtypeId' Int)
+    (SectionId' Int)
+
+qgroupTable :: Table
+    (Qgroup' QgroupWriteIdColumn (Column PGInt4) (Column PGText) (Column PGText) QtypeIdColumn SectionIdColumn)
+    QgroupColumns
 qgroupTable = Table "qgroup" $
     pQgroup Qgroup {
         qgroupId        = pQgroupId  . QgroupId  $ OE.optional "qgroup_id",
@@ -118,8 +155,29 @@ qgroupTable = Table "qgroup" $
         qgroupSectionId = pSectionId . SectionId $ required "qgroup_section_id"
     }
 
-zipQgroup :: Qgroup' (QgroupId' [a]) [b] [c] [d] [e] [f] -> [Qgroup' (QgroupId' a) b c d e f]
-zipQgroup (Qgroup a b c d e f) = zipWith6 Qgroup (fmap QgroupId $ unQgroupId a) b c d e f
+zipQgroup ::
+    Qgroup' (QgroupId' [a]) [b] [c] [d] (QtypeId' [e]) (SectionId' [f]) ->
+    [Qgroup' (QgroupId' a) b c d (QtypeId' e) (SectionId' f)]
+zipQgroup (Qgroup a b c d e f) = zipWith6 Qgroup
+    (QgroupId <$> unQgroupId a) b c d
+    (QtypeId <$> unQtypeId e) (SectionId <$> unSectionId f)
+
+liftQgroup :: (ProductProfunctor p) =>
+    p a0 b0 -> p a1 b1 -> p a2 b2 -> p a3 b3 -> p a4 b4 -> p a5 b5 ->
+    p (Qgroup' (QgroupId' a0) a1 a2 a3 (QtypeId' a4) (SectionId' a5))
+      (Qgroup' (QgroupId' b0) b1 b2 b3 (QtypeId' b4) (SectionId' b5))
+liftQgroup q0 q1 q2 q3 q4 q5 = pQgroup $ Qgroup
+    (dimap unQgroupId QgroupId q0)
+    q1
+    q2
+    q3
+    (dimap unQtypeId QtypeId q4)
+    (dimap unSectionId SectionId q5)
+
+liftQgroupId :: (Profunctor p) =>
+    p a b ->
+    p (QgroupId' a) (QgroupId' b)
+liftQgroupId = dimap unQgroupId QgroupId
 
 -- table question
 
@@ -137,9 +195,18 @@ $(makeAdaptorAndInstance "pQuestionId" ''QuestionId')
 type QuestionIdColumn = QuestionId' (Column PGInt4)
 type QuestionWriteIdColumn = (QuestionId' (Maybe (Column PGInt4)))
 
+type QuestionColumnsWrapped w = Question'
+    (QuestionId' (w PGInt4))
+    (w PGInt4)
+    (w PGText)
+    (QgroupId' (w PGInt4))
+type QuestionColumns = QuestionColumnsWrapped Column
+
+type QuestionIdData = QuestionId' Int
+
 questionTable :: Table
     (Question' QuestionWriteIdColumn (Column PGInt4) (Column PGText) (QgroupIdColumn))
-    (Question' QuestionIdColumn (Column PGInt4) (Column PGText) (QgroupIdColumn))
+    QuestionColumns
 questionTable = Table "question" $
     pQuestion Question {
         questionId       = pQuestionId . QuestionId $ OE.optional "question_id",
@@ -149,7 +216,7 @@ questionTable = Table "question" $
     }
 
 zipQuestion :: Question' (QuestionId' [a]) [b] [c] [d] -> [Question' (QuestionId' a) b c d]
-zipQuestion (Question a b c d) = zipWith4 Question (fmap QuestionId $ unQuestionId a) b c d
+zipQuestion (Question a b c d) = zipWith4 Question (QuestionId <$> unQuestionId a) b c d
 
 -- table rating
 
@@ -168,9 +235,19 @@ $(makeAdaptorAndInstance "pRatingId" ''RatingId')
 type RatingIdColumn = RatingId' (Column PGInt4)
 type RatingWriteIdColumn = (RatingId' (Maybe (Column PGInt4)))
 
+type RatingColumnsWrapped w = Rating'
+    (RatingId' (w PGInt4))
+    (w PGInt4)
+    (w PGText)
+    (w PGBool)
+    (QgroupId' (w PGInt4))
+type RatingColumns = RatingColumnsWrapped Column
+
+type RatingIdData = (RatingId' Int)
+
 ratingTable :: Table
     (Rating' RatingWriteIdColumn (Column PGInt4) (Column PGText) (Column PGBool) (QgroupIdColumn))
-    (Rating' RatingIdColumn (Column PGInt4) (Column PGText) (Column PGBool) (QgroupIdColumn))
+    RatingColumns
 ratingTable = Table "rating" $
     pRating Rating {
         ratingId       = pRatingId . RatingId $ OE.optional "rating_id",
@@ -181,7 +258,16 @@ ratingTable = Table "rating" $
     }
 
 zipRating :: Rating' (RatingId' [a]) [b] [c] [d] [e] -> [Rating' (RatingId' a) b c d e]
-zipRating (Rating a b c d e) = zipWith5 Rating (fmap RatingId $ unRatingId a) b c d e
+zipRating (Rating a b c d e) = zipWith5 Rating (RatingId <$> unRatingId a) b c d e
+
+liftRating :: (ProductProfunctor p) =>
+    p a0 b0 -> p a1 b1 -> p a2 b2 -> p a3 b3 -> p a4 b4 ->
+    p (Rating' (RatingId' a0) a1 a2 a3 (QgroupId' a4)) (Rating' (RatingId' b0) b1 b2 b3 (QgroupId' b4))
+liftRating q0 q1 q2 q3 q4 = pRating $ Rating (liftRatingId q0) q1 q2 q3 (liftQgroupId q4)
+
+liftRatingId :: (Profunctor p) =>
+    p a b -> p (RatingId' a) (RatingId' b)
+liftRatingId = dimap unRatingId RatingId
 
 -- table answer
 
@@ -211,4 +297,4 @@ answerTable = Table "answer" $
     }
 
 zipAnswer :: Answer' (AnswerId' [a]) [b] [c] [d] -> [Answer' (AnswerId' a) b c d]
-zipAnswer (Answer a b c d) = zipWith4 Answer (fmap AnswerId $ unAnswerId a) b c d
+zipAnswer (Answer a b c d) = zipWith4 Answer (AnswerId <$> unAnswerId a) b c d
