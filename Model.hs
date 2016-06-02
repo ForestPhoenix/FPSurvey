@@ -61,7 +61,7 @@ sectionTable = Table "section" $
     }
 
 zipSection :: Section' (SectionId' [a]) [b] [c] -> [Section' (SectionId' a) b c]
-zipSection (Section a b c) = zipWith3 Section (SectionId <$> unSectionId a) b c
+zipSection (Section a b c) = Section <$> (SectionId <$> unSectionId a) <*> b <*> c
 
 liftSectionIds :: (ProductProfunctor p) =>
     p a0 b0 -> p a1 b1 -> p a2 b2 ->

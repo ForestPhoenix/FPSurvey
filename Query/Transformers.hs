@@ -16,7 +16,7 @@ emptyArray = OIP.literalColumn $ HPQ.StringLit "{}"
 allArrayAgg :: D.Default ArrayAgg a b => O.Aggregator a b
 allArrayAgg = unArrayAgg D.def
 
-newtype ArrayAgg a b = ArrayAgg { unArrayAgg :: (O.Aggregator a b) }
+newtype ArrayAgg a b = ArrayAgg { unArrayAgg :: O.Aggregator a b }
 
 instance Profunctor ArrayAgg where
     dimap l r (ArrayAgg aggr) = ArrayAgg $ dimap l r aggr
@@ -33,7 +33,7 @@ instance D.Default ArrayAgg (O.Column a) (O.Column (O.PGArray a)) where
 allGroupBy :: D.Default GroupBy a b => O.Aggregator a b
 allGroupBy = unGroupBy D.def
 
-newtype GroupBy a b = GroupBy { unGroupBy :: (O.Aggregator a b) }
+newtype GroupBy a b = GroupBy { unGroupBy :: O.Aggregator a b }
 
 instance Profunctor GroupBy where
     dimap l r (GroupBy aggr) = GroupBy $ dimap l r aggr
@@ -61,3 +61,7 @@ instance PP.ProductProfunctor FromNullableEmptyArray where
 
 instance D.Default FromNullableEmptyArray (O.Column (O.Nullable (O.PGArray a))) (O.Column (O.PGArray a)) where
     def = FromNullableEmptyArray $ O.fromNullable emptyArray
+
+-- fromList
+
+--TODO: implement a generic fromList / zip* (using lenses? toresearch, toresearch...)

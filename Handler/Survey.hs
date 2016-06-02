@@ -16,13 +16,13 @@ runSurveyR :: Handler Html
 runSurveyR = do
     app <- getYesod
     let pool = appConnPool app
-    rawSurvey <- liftIO $ withResource pool $ 
+    rawSurvey <- liftIO $ withResource pool $
         (\conn -> (runQuery conn querySurvey) :: IO [(SectionData, QgroupDataWrapped [])])
     let survey = fmap (\(section, qgroups) -> (section, zipQgroup qgroups)) rawSurvey
     ((res, widget), enctype) <- runFormPost $ surveyForm survey
     case res of
         FormMissing -> do
-            defaultLayout 
+            defaultLayout
                 [whamlet|
                     <h1 class="survey_header"> Wie wohl fühlst du dich am OSZ IMT ?
                     <form method=post action=@{SurveyR} enctype=#{enctype}> ^{widget}
@@ -56,12 +56,12 @@ runSurveyR = do
 --         ("FETCH ALL IN \"rating_rc\"", []),
 --         ("COMMIT;", [])])
 --     let surveyMaps = take 3 $ drop 2 dbSurvey
---     let surveySections = 
---             map (\row -> (,) <$> ((,) <$> safeFromSqlRow row <*> safeFromSqlRow row) <*> safeFromSqlRow row) 
+--     let surveySections =
+--             map (\row -> (,) <$> ((,) <$> safeFromSqlRow row <*> safeFromSqlRow row) <*> safeFromSqlRow row)
 --             (surveyMaps !! 0)
---     let surveyTypes = map (\row -> (,) <$> safeFromSqlRow row <*> safeFromSqlRow row) 
+--     let surveyTypes = map (\row -> (,) <$> safeFromSqlRow row <*> safeFromSqlRow row)
 --             (surveyMaps !! 1)
---     let surveyRatings = map (\row -> (,) <$> safeFromSqlRow row <*> safeFromSqlRow row) 
+--     let surveyRatings = map (\row -> (,) <$> safeFromSqlRow row <*> safeFromSqlRow row)
 --             (surveyMaps !! 2)
 --     let survey = convertUntakenSurvey (rights surveySections) (rights surveyTypes) (rights surveyRatings)
 --     let surveyErrors = (lefts surveySections) ++ (lefts surveyTypes) ++ (lefts surveyRatings)
@@ -69,7 +69,7 @@ runSurveyR = do
 --     ((res, widget), enctype) <- runFormPost $ surveyForm survey
 --     case res of
 --         FormMissing -> do
---             defaultLayout 
+--             defaultLayout
 --                 [whamlet|
 --                     <h1 class="survey_header"> Wie wohl fühlst du dich am OSZ IMT ?
 --                     <form method=post action=@{SurveyR} enctype=#{enctype}> ^{widget}
@@ -89,7 +89,7 @@ runSurveyR = do
 --                             Thanks for participating!
 --                             You can overwrite you answers by re-using your user token.
 --                         |]
--- 
+--
 -- submitSurvey :: (IConnection conn) =>
 --     (Text, [(Question SqlValue, SurveyInput SqlValue)]) -> conn -> IO (Maybe String)
 -- submitSurvey (userToken, survey) conn = do
@@ -98,13 +98,13 @@ runSurveyR = do
 --     let pre_participants = map safeFromSqlRow participantRows
 --     let participants = rights pre_participants
 --     -- TODO: handle errors
---     case participants of 
+--     case participants of
 --         [] -> return $ Just "Wrong user Token."
 --         [participant] -> do
 --            writeSurveyToDb (participant) survey conn
 --            return $ Nothing
 --         _ -> return $ Just "Multiple Paricipants?!"
---            
+--
 -- writeSurveyToDb :: (IConnection conn) =>
 --     Participant SqlValue -> [(Question SqlValue, SurveyInput SqlValue)] -> conn -> IO ()
 -- writeSurveyToDb participant survey conn = do
@@ -114,17 +114,17 @@ runSurveyR = do
 --         (map (surveyRowInsert participant) survey) ++
 --         [("COMMIT;", [])])
 --     return ()
--- 
+--
 -- surveyRowInsert ::
 --     Participant SqlValue ->
 --     (Question SqlValue, SurveyInput SqlValue) ->
 --     (String, [SqlValue])
---     
--- surveyRowInsert participant (question, InputRating rating) = 
+--
+-- surveyRowInsert participant (question, InputRating rating) =
 --     ("INSERT INTO answer(answer_question_id, answer_rating_id, answer_participant_id) VALUES (?, ?, ?);",
 --         [rowId question, rowId rating, rowId participant])
--- 
--- surveyRowInsert participant (question, InputOther value) = 
+--
+-- surveyRowInsert participant (question, InputOther value) =
 --     ("WITH newrating AS ( " ++
 --         "INSERT INTO rating (rating_value, rating_dev_given, rating_qgroup_id) " ++
 --         "SELECT ?, 'false', question_qgroup_id FROM question " ++
