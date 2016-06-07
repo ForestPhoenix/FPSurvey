@@ -110,7 +110,7 @@ queryRatingsArr :: Query (QgroupIdColumn, RatingColumnsWrapped ColArr)
 queryRatingsArr = proc () -> do
     (qgroupIds, (_ :: QgroupId' (ColNull PGInt4),
         ratings :: RatingColumnsWrapped ColNullArr))
-        <- leftJoin queryQgroupIds queryRatingsArrHelper
+        <- leftJoin queryQgroupIds (arrayAggSnd queryRatingsQgroupId)
         (\(jQgroupIds, jRatingResults) -> fst jRatingResults .=== jQgroupIds) -< ()
     returnA -< (qgroupIds,
         allFromNullableEmptyArray ratings)

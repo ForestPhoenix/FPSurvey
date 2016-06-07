@@ -5,6 +5,7 @@ import Import
 import Opaleye as OE
 import Data.Profunctor.Product.TH (makeAdaptorAndInstance)
 import Data.Profunctor.Product
+import Query.Relation
 
 -- table participant
 
@@ -39,7 +40,7 @@ data Section' a b c = Section {
     sectionSort :: b,
     sectionTitle :: c
 } deriving (Show, Eq)
-$(makeAdaptorAndInstance "pSection" ''Section')
+$(deriveRelation ''Section' "pSection")
 
 newtype SectionId' a = SectionId { unSectionId :: a } deriving (Show, Eq)
 $(makeAdaptorAndInstance "pSectionId" ''SectionId')
@@ -87,6 +88,13 @@ type QtypeColumnsWrapped w = Qtype'
     (QtypeId' (w PGInt4))
     (w PGText)
 type QtypeColumns = QtypeColumnsWrapped Column
+
+type QtypeDataWrapped w = Qtype'
+    (QtypeId' (w Int))
+    (w Text)
+type QtypeData = Qtype'
+    (QtypeId' Int)
+    Text
 
 qtypeTable :: Table
     (Qtype' QtypeWriteIdColumn (Column PGText))
@@ -202,7 +210,16 @@ type QuestionColumnsWrapped w = Question'
     (QgroupId' (w PGInt4))
 type QuestionColumns = QuestionColumnsWrapped Column
 
-type QuestionIdData = QuestionId' Int
+type QuestionDataWrapped w = Question'
+    (QuestionId' (w Int))
+    (w Int)
+    (w Text)
+    (QgroupId' (w Int))
+type QuestionData = Question'
+    (QuestionId' Int)
+    Int
+    Text
+    (QgroupId' Int)
 
 questionTable :: Table
     (Question' QuestionWriteIdColumn (Column PGInt4) (Column PGText) (QgroupIdColumn))
@@ -215,8 +232,9 @@ questionTable = Table "question" $
         questionQgroupId = pQgroupId   . QgroupId   $ required "question_qgroup_id"
     }
 
-zipQuestion :: Question' (QuestionId' [a]) [b] [c] [d] -> [Question' (QuestionId' a) b c d]
-zipQuestion (Question a b c d) = zipWith4 Question (QuestionId <$> unQuestionId a) b c d
+zipQuestion :: Question' (QuestionId' [a]) [b] [c] (QgroupId' [d]) ->
+    [Question' (QuestionId' a) b c (QgroupId' d)]
+zipQuestion (Question a b c d) = zipWith4 Question (QuestionId <$> unQuestionId a) b c (QgroupId <$> unQgroupId d)
 
 -- table rating
 
@@ -243,7 +261,18 @@ type RatingColumnsWrapped w = Rating'
     (QgroupId' (w PGInt4))
 type RatingColumns = RatingColumnsWrapped Column
 
-type RatingIdData = (RatingId' Int)
+type RatingDataWrapped w = Rating'
+    (RatingId' (w Int))
+    (w Int)
+    (w Text)
+    (w Bool)
+    (QgroupId' (w Int))
+type RatingData = Rating'
+    (RatingId' Int)
+    Int
+    Text
+    Bool
+    (QgroupId' Int)
 
 ratingTable :: Table
     (Rating' RatingWriteIdColumn (Column PGInt4) (Column PGText) (Column PGBool) (QgroupIdColumn))
@@ -257,8 +286,9 @@ ratingTable = Table "rating" $
         ratingQgroupId = pQgroupId . QgroupId $ required "rating_qgroup_id"
     }
 
-zipRating :: Rating' (RatingId' [a]) [b] [c] [d] [e] -> [Rating' (RatingId' a) b c d e]
-zipRating (Rating a b c d e) = zipWith5 Rating (RatingId <$> unRatingId a) b c d e
+zipRating :: Rating' (RatingId' [a]) [b] [c] [d] (QgroupId' [e]) ->
+    [Rating' (RatingId' a) b c d (QgroupId' e)]
+zipRating (Rating a b c d e) = zipWith5 Rating (RatingId <$> unRatingId a) b c d (QgroupId <$> unQgroupId e)
 
 liftRating :: (ProductProfunctor p) =>
     p a0 b0 -> p a1 b1 -> p a2 b2 -> p a3 b3 -> p a4 b4 ->

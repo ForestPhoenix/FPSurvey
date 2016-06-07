@@ -8,10 +8,10 @@ import qualified Opaleye as O
 import qualified Opaleye.Internal.PGTypes as OIP
 import qualified Opaleye.Internal.HaskellDB.PrimQuery as HPQ
 
-emptyArray :: O.Column (O.PGArray a)
-emptyArray = OIP.literalColumn $ HPQ.StringLit "{}"
-
 -- arrayAgg
+
+emptyArrLit :: O.Column (O.PGArray a)
+emptyArrLit = OIP.literalColumn $ HPQ.StringLit "{}"
 
 allArrayAgg :: D.Default ArrayAgg a b => O.Aggregator a b
 allArrayAgg = unArrayAgg D.def
@@ -60,7 +60,7 @@ instance PP.ProductProfunctor FromNullableEmptyArray where
     (***!) (FromNullableEmptyArray a) (FromNullableEmptyArray b) = FromNullableEmptyArray (a PP.***! b)
 
 instance D.Default FromNullableEmptyArray (O.Column (O.Nullable (O.PGArray a))) (O.Column (O.PGArray a)) where
-    def = FromNullableEmptyArray $ O.fromNullable emptyArray
+    def = FromNullableEmptyArray $ O.fromNullable emptyArrLit
 
 -- fromList
 

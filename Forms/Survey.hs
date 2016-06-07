@@ -5,23 +5,23 @@ import Import
 import Model
 import Fields.Survey
 
-data SurveyInput = InputRating RatingIdData | InputOther Text
+data SurveyInput = InputRating RatingData | InputOther Text
 
-surveyForm :: 
+surveyForm ::
     [(SectionData, [QgroupData])] ->
     Html ->
-    MForm Handler (FormResult (Text, [(QuestionIdData, SurveyInput)]), Widget)
-    
+    MForm Handler (FormResult (Text, [(QuestionData, SurveyInput)]), Widget)
+
 surveyForm survey extra = do
     let subForms = fmap sectionForm survey
     (userRes, userView) <- mreq textField "" Nothing
     subFormsRes <- sequence (fmap (\form -> form $ toHtml ("" :: Text)) subForms)
-    let (subRes, subWidgets) = unzip $ subFormsRes
+    let (subRes, subWidgets) = unzip subFormsRes
     let widget =
             [whamlet|
                 #{extra}
                 <div class="survey">
-                    <div class="survey_group"> 
+                    <div class="survey_group">
                         <span class="survey_group_header"> Dein Zugangscode:
                         <br>
                         ^{fvInput userView}
@@ -36,8 +36,8 @@ surveyForm survey extra = do
 sectionForm ::
     (SectionData, [QgroupData]) ->
     Html ->
-    MForm Handler (FormResult [(QuestionIdData, SurveyInput)], Widget)
-    
+    MForm Handler (FormResult [(QuestionData, SurveyInput)], Widget)
+
 sectionForm (section, groups) _ = do
     let subForms = map groupForm groups
     subFormsRes <- sequence (map (\form -> form $ toHtml ("" :: Text)) subForms)
@@ -45,7 +45,7 @@ sectionForm (section, groups) _ = do
     let widget = [whamlet|
         <div class="survey_section">
             <h2> <li> #{sectionTitle section}
-            <ol> 
+            <ol>
                 $forall subWidget <- subWidgets
                     ^{subWidget}
         |]
@@ -55,8 +55,8 @@ sectionForm (section, groups) _ = do
 groupForm ::
     QgroupData ->
     Html ->
-    MForm Handler (FormResult [(QuestionIdData, SurveyInput)], Widget)
-    
+    MForm Handler (FormResult [(QuestionData, SurveyInput)], Widget)
+
 groupForm = error "NYI!"
 
 {-groupForm (qGroup, qtype, questions, ratings) _ = do
@@ -71,7 +71,7 @@ groupForm = error "NYI!"
                         <span class="survey_group_header"> #{qgroup_header qGroup}
                         <table class="survey_radio">
                             <thead>
-                                <tr> 
+                                <tr>
                                     <th>
                                     $forall header <- map rating_value ratings
                                         <th> #{header}
@@ -85,7 +85,7 @@ groupForm = error "NYI!"
                         <span class="survey_group_header"> #{qgroup_header qGroup}
                         <table class="survey_radio">
                             <thead>
-                                <tr> 
+                                <tr>
                                     <th>
                                     $forall header <- map rating_value ratings
                                         <th> #{header}
@@ -102,7 +102,7 @@ groupForm = error "NYI!"
                                 ^{subWidget}
                         $else
                             <h3> #{qgroup_header qGroup}
-                            <ol> 
+                            <ol>
                                 $forall subWidget <- subWidgets
                                     <li> ^{subWidget}
                 |]
@@ -195,7 +195,7 @@ questionForm (RadioWith TextInput) ratings question _ = do
     let result = (,) question <$> (fieldSoToForm <$> ratingRes)
     return (result, widget)
 
-questionForm (RadioWith _) _ _ _ = 
+questionForm (RadioWith _) _ _ _ =
     error "RadioWith used with invalid sub-input"
 
 fieldSoToForm :: (SqlId a) => SelectWithOther (Rating a) Text -> SurveyInput a

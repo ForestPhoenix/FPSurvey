@@ -25,6 +25,7 @@ library
                      Fields.Survey
                      Query.Common
                      Query.Transformers
+                     Query.Relation
                      Query.Survey
                      Model
 

@@ -12,13 +12,37 @@ getSurveyR = runSurveyR
 postSurveyR :: Handler Html
 postSurveyR = runSurveyR
 
+type List a = [a]
+type ListList a = List (List a)
+
+zipSurveySection ::
+    (SectionData,
+       QgroupDataWrapped List,
+       QtypeDataWrapped List,
+           RatingDataWrapped ListList,
+           QuestionDataWrapped ListList)
+           ->
+    (SectionData, [(QgroupData, QtypeData, [RatingData], [QuestionData])])
+zipSurveySection (section, qgroups, qtypes, ratings, questions) =
+    (section, zip4
+        (zipQgroup qgroups)
+        (zipQtype qtypes)
+            (zipRating <$> zipRating ratings)
+            (zipQuestion <$> zipQuestion questions))
+
 runSurveyR :: Handler Html
 runSurveyR = do
     app <- getYesod
     let pool = appConnPool app
     rawSurvey <- liftIO $ withResource pool $
-        (\conn -> (runQuery conn querySurvey) :: IO [(SectionData, QgroupDataWrapped [])])
-    let survey = fmap (\(section, qgroups) -> (section, zipQgroup qgroups)) rawSurvey
+        (\conn -> (runQuery conn querySections) :: IO
+         [(SectionData,
+            QgroupDataWrapped List,
+            QtypeDataWrapped List,
+                RatingDataWrapped ListList,
+                QuestionDataWrapped ListList)]
+        )
+    let survey = zipSurveySection <$> rawSurvey
     ((res, widget), enctype) <- runFormPost $ surveyForm survey
     case res of
         FormMissing -> do
