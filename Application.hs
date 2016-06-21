@@ -32,7 +32,7 @@ import qualified Database.PostgreSQL.Simple as PGS
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
 import Handler.Common
-import Handler.Survey
+import Handler.SurveyR
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -56,7 +56,7 @@ makeFoundation appSettings = do
     appConnPool <- createPool
         (PGS.connectPostgreSQL $ fromString $ appDatabaseConf appSettings)
         PGS.close 1 10 10
-    
+
     -- Return the foundation
     return App {..}
 

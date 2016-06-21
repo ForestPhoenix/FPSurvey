@@ -20,7 +20,7 @@ library
                      Settings
                      Settings.StaticFiles
                      Handler.Common
-                     Handler.Survey
+                     Handler.SurveyR
                      Forms.Survey
                      Fields.Survey
                      Query.Transformers

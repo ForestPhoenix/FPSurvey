@@ -1,4 +1,4 @@
-module Handler.Survey where
+module Handler.SurveyR where
 
 import Import
 
