@@ -7,15 +7,18 @@ import qualified Data.List as L
 spec :: Spec
 spec = do
     describe "groupRight" $ do
-        it "unGroupRight is its inverse" $ property $
+        it "unGroupRight . groupRight == id" $ property $
             \(xs :: [(A, B)]) ->
             (unGroupRight . groupRight) xs == xs
-        it "stays sorted if the input 'a's was sorted" $ property $
+        it "preserves the order of the first elements" $ property $
             \(xs :: [(OrdA, B)]) ->
-            (unGroupRight . groupRight) (sortFirst xs) == sortFirst xs
-        it "is the inverse of unGroupRight if all equal as are adjacent" $ property $
+            (groupedAs . groupRight) xs == fst <$> xs
+        it "preserves the order of the second elements" $ property $
             \(xs :: [(OrdA, B)]) ->
-            (groupRight . unGroupRight . groupRight . sortFirst) xs == (groupRight . sortFirst) xs
+            (groupedBs . groupRight) xs == snd <$> xs
+        it "is injective" $ property $
+            \((xs :: [(OrdA, B)]), (ys :: [(OrdA, B)])) ->
+            xs != ys ==> groupRight xs != groupRight ys
 
     describe "collapseRight" $ do
         it "unCollapseRight is its inverse if RightGroup is valid" $ property $
@@ -26,7 +29,10 @@ spec = do
             collapseSort xs == collapseNub (sortFirst xs)
         it "is the inverse of unCollapseRight if there are no duplicate 'a's" $ property $
             \(xs :: [(OrdA, B)]) ->
-            (collapseRight . unCollapseRight . collapseSort) xs == collapseSort xs
+            (collapseRight . unCollapseRight . collapseNub) xs == collapseNub xs
+        it "is injective if RightGroup is valid" $ property $
+            \((xs :: [(OrdA, B)]), (ys :: [(OrdA, B)])) ->
+            xs != ys ==> (collapseRight . groupRight) xs != (collapseRight . groupRight) ys
 
     describe "leftJoin coll as" $ do
         it "is id when 'as = collapsedAs coll' and no duplicate as are in 'coll'" $ property $
