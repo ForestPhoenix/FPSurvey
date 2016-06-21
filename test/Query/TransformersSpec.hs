@@ -13,12 +13,12 @@ spec = do
             (unGroupRight . groupRight) xs == xs
         it "preserves the order of the first elements" $ property $
             \(xs :: [(OrdA, B)]) ->
-            (mconcat . (fmap NE.toList) . groupedAs . groupRight) xs == (fst <$> xs)
+            (mconcat . fmap NE.toList . groupedAs . groupRight) xs == (fst <$> xs)
         it "preserves the order of the second elements" $ property $
             \(xs :: [(OrdA, B)]) ->
-            (mconcat . (fmap NE.toList) . groupedBs . groupRight) xs == (snd <$> xs)
+            (mconcat . fmap NE.toList . groupedBs . groupRight) xs == (snd <$> xs)
         it "is injective" $ property $
-            \((xs :: [(OrdA, B)]), (ys :: [(OrdA, B)])) ->
+            \(xs :: [(OrdA, B)], ys :: [(OrdA, B)]) ->
             xs /= ys ==> groupRight xs /= groupRight ys
 
     describe "collapseRight" $ do
@@ -32,7 +32,7 @@ spec = do
             \(xs :: [(OrdA, B)]) ->
             (collapseRight . unCollapseRight . collapseNub) xs == collapseNub xs
         it "is injective if RightGroup is valid" $ property $
-            \((xs :: [(OrdA, B)]), (ys :: [(OrdA, B)])) ->
+            \(xs :: [(OrdA, B)], ys :: [(OrdA, B)]) ->
             xs /= ys ==> (collapseRight . groupRight) xs /= (collapseRight . groupRight) ys
 
     describe "leftJoin coll as" $ do

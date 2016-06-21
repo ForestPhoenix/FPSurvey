@@ -1,27 +1,30 @@
 module Query.Transformers (
     RightGrouped(),
+    unRightGrouped,
     unsafeLiftGrouped,
+
     groupRight,
     unGroupRight,
-    unRightGrouped,
     groupedAs,
     groupedBs,
 
     RightCollapsed(),
+    unRightCollapsed,
     unsafeLiftRightCollapsed,
+
     collapseRight,
     unCollapseRight,
-    unRightCollapsed,
     collapsedAs,
     collapsedBs,
     unwrapRightCollapsed,
 
-    leftJoin
+    leftJoin,
+    fullLeftJoin
 ) where
 
 import           Data.List.NonEmpty as NE
+import           Data.Map.Strict    as M
 import           Import
-import Data.Map.Strict as M
 
 -- arrayAgg
 
@@ -67,8 +70,14 @@ collapsedBs = fmap snd . unRightCollapsed
 unwrapRightCollapsed :: RightCollapsed a b -> [(a, [b])]
 unwrapRightCollapsed = fmap (second NE.toList) . unRightCollapsed
 
+
 leftJoin :: (Ord a) => RightCollapsed a b -> [a] -> [(a, [b])]
 leftJoin (RightCollapsed xs) as = lookupTuple xsMap <$> as
     where
         xsMap = M.fromList $ second NE.toList <$> xs
         lookupTuple cMap x = (,) x $ fromMaybe [] $ M.lookup x cMap
+
+fullLeftJoin :: Ord a => [a] -> [(a, b)] -> [(a, [b])]
+fullLeftJoin as = flip leftJoin as . collapseRight . groupRight
+
+--unsafeFastLeftJoin :: RightCollapsed a b -> [a] -> LeftJoined a b]
