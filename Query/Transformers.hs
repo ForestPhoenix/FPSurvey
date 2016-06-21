@@ -1,67 +1,74 @@
-module Query.Transformers where
+module Query.Transformers (
+    RightGrouped(),
+    unsafeLiftGrouped,
+    groupRight,
+    unGroupRight,
+    unRightGrouped,
+    groupedAs,
+    groupedBs,
 
-import Import
-import qualified Data.Profunctor.Product as PP
-import qualified Data.Profunctor.Product.Default as D
+    RightCollapsed(),
+    unsafeLiftRightCollapsed,
+    collapseRight,
+    unCollapseRight,
+    unRightCollapsed,
+    collapsedAs,
+    collapsedBs,
+    unwrapRightCollapsed,
 
-import qualified Opaleye as O
-import qualified Opaleye.Internal.PGTypes as OIP
-import qualified Opaleye.Internal.HaskellDB.PrimQuery as HPQ
+    leftJoin
+) where
+
+import           Data.List.NonEmpty as NE
+import           Import
+import Data.Map.Strict as M
 
 -- arrayAgg
 
-emptyArrLit :: O.Column (O.PGArray a)
-emptyArrLit = OIP.literalColumn $ HPQ.StringLit "{}"
+newtype RightGrouped a b = RightGrouped { unRightGrouped :: [NonEmpty (a, b)] }
+    deriving (Show, Eq)
 
-allArrayAgg :: D.Default ArrayAgg a b => O.Aggregator a b
-allArrayAgg = unArrayAgg D.def
+unsafeLiftGrouped :: ([NonEmpty (a, b)] -> [NonEmpty (c, d)]) -> RightGrouped a b -> RightGrouped c d
+unsafeLiftGrouped f = RightGrouped . f . unRightGrouped
 
-newtype ArrayAgg a b = ArrayAgg { unArrayAgg :: O.Aggregator a b }
+groupRight :: Eq a => [(a, b)] -> RightGrouped a b
+groupRight = RightGrouped <$> NE.groupBy (\a b -> fst a == fst b)
 
-instance Profunctor ArrayAgg where
-    dimap l r (ArrayAgg aggr) = ArrayAgg $ dimap l r aggr
+unGroupRight :: RightGrouped a b -> [(a, b)]
+unGroupRight (RightGrouped xs) = mconcat $ NE.toList <$> xs
 
-instance PP.ProductProfunctor ArrayAgg where
-    empty = ArrayAgg PP.empty
-    (***!) (ArrayAgg a) (ArrayAgg b) = ArrayAgg (a PP.***! b)
+groupedAs :: RightGrouped a b -> [NonEmpty a]
+groupedAs = fmap (fmap fst) . unRightGrouped
 
-instance D.Default ArrayAgg (O.Column a) (O.Column (O.PGArray a)) where
-    def = ArrayAgg O.arrayAgg
+groupedBs :: RightGrouped a b -> [NonEmpty b]
+groupedBs = fmap (fmap snd) . unRightGrouped
 
--- groupBy
 
-allGroupBy :: D.Default GroupBy a b => O.Aggregator a b
-allGroupBy = unGroupBy D.def
+newtype RightCollapsed a b = RightCollapsed { unRightCollapsed :: [(a, NonEmpty b)] }
+    deriving (Show, Eq)
 
-newtype GroupBy a b = GroupBy { unGroupBy :: O.Aggregator a b }
+unsafeLiftRightCollapsed ::
+    ([(a, NonEmpty b)] -> [(c, NonEmpty d)]) -> RightCollapsed a b -> RightCollapsed c d
+unsafeLiftRightCollapsed f = RightCollapsed . f . unRightCollapsed
 
-instance Profunctor GroupBy where
-    dimap l r (GroupBy aggr) = GroupBy $ dimap l r aggr
+collapseRight :: RightGrouped a b -> RightCollapsed a b
+collapseRight (RightGrouped xs) = RightCollapsed $
+    (first NE.head . NE.unzip) <$> xs
 
-instance PP.ProductProfunctor GroupBy where
-    empty = GroupBy PP.empty
-    (***!) (GroupBy a) (GroupBy b) = GroupBy (a PP.***! b)
+unCollapseRight :: RightCollapsed a b -> RightGrouped a b
+unCollapseRight (RightCollapsed xs) = RightGrouped $ (\(a, bs) -> NE.zip (NE.repeat a) bs) <$> xs
 
-instance D.Default GroupBy (O.Column a) (O.Column a) where
-    def = GroupBy O.groupBy
+collapsedAs :: RightCollapsed a b -> [a]
+collapsedAs = fmap fst . unRightCollapsed
 
--- fromNullable emptyArray
+collapsedBs :: RightCollapsed a b -> [NonEmpty b]
+collapsedBs = fmap snd . unRightCollapsed
 
-allFromNullableEmptyArray :: D.Default FromNullableEmptyArray a b => a -> b
-allFromNullableEmptyArray = unFromNullableEmptyArray D.def
+unwrapRightCollapsed :: RightCollapsed a b -> [(a, [b])]
+unwrapRightCollapsed = fmap (second NE.toList) . unRightCollapsed
 
-newtype FromNullableEmptyArray a b = FromNullableEmptyArray { unFromNullableEmptyArray :: a -> b }
-
-instance Profunctor FromNullableEmptyArray where
-    dimap l r (FromNullableEmptyArray f) = FromNullableEmptyArray $ dimap l r f
-
-instance PP.ProductProfunctor FromNullableEmptyArray where
-    empty = FromNullableEmptyArray PP.empty
-    (***!) (FromNullableEmptyArray a) (FromNullableEmptyArray b) = FromNullableEmptyArray (a PP.***! b)
-
-instance D.Default FromNullableEmptyArray (O.Column (O.Nullable (O.PGArray a))) (O.Column (O.PGArray a)) where
-    def = FromNullableEmptyArray $ O.fromNullable emptyArrLit
-
--- fromList
-
---TODO: implement a generic fromList / zip* (using lenses? toresearch, toresearch...)
+leftJoin :: (Ord a) => RightCollapsed a b -> [a] -> [(a, [b])]
+leftJoin (RightCollapsed xs) as = flip lookupTuple xsMap <$> as
+    where
+        xsMap = M.fromList $ second NE.toList <$> xs
+        lookupTuple x cMap = (,) x $ fromMaybe [] $ M.lookup x cMap

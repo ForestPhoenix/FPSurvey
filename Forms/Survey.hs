@@ -2,7 +2,7 @@ module Forms.Survey where
 
 import Import
 
-import Model
+import Query.Model
 import Fields.Survey
 
 data SurveyInput = InputRating RatingData | InputOther Text

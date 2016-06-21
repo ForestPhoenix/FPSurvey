@@ -2,7 +2,7 @@ module Handler.Survey where
 
 import Import
 
-import Model
+import Query.Model
 import Query.Survey
 import Forms.Survey
 
@@ -15,24 +15,11 @@ postSurveyR = runSurveyR
 type List a = [a]
 type ListList a = List (List a)
 
-zipSurveySection ::
-    (SectionData,
-       QgroupDataWrapped List,
-       QtypeDataWrapped List,
-           RatingDataWrapped ListList,
-           QuestionDataWrapped ListList)
-           ->
-    (SectionData, [(QgroupData, QtypeData, [RatingData], [QuestionData])])
-zipSurveySection (section, qgroups, qtypes, ratings, questions) =
-    (section, zip4
-        (zipQgroup qgroups)
-        (zipQtype qtypes)
-            (zipRating <$> zipRating ratings)
-            (zipQuestion <$> zipQuestion questions))
+
 
 runSurveyR :: Handler Html
-runSurveyR = do
-    app <- getYesod
+runSurveyR = do fail "NY!"
+{-    app <- getYesod
     let pool = appConnPool app
     rawSurvey <- liftIO $ withResource pool $
         (\conn -> (runQuery conn querySections) :: IO
@@ -58,7 +45,7 @@ runSurveyR = do
                         <br> An error occured: #{errorMessage}
                 |]
         FormSuccess surveyInput -> do
-                defaultLayout $ [whamlet|Coming soon!|]
+                defaultLayout $ [whamlet|Coming soon!|] -}
 --             submitResult <- liftIO $ withResource pool $ submitSurvey surveyInput
 --             case submitResult of
 --                  Just err -> defaultLayout [whamlet| an error occured: #{err}|]

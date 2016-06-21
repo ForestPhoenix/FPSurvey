@@ -16,21 +16,16 @@ CREATE TABLE section
 
 CREATE INDEX ON section(section_sort);
 
-CREATE TABLE qtype
-(
-  qtype_id serial PRIMARY KEY,
-  qtype_display_variant text NOT NULL
-);
-
 CREATE TABLE qgroup
 (
 	qgroup_id serial PRIMARY KEY,
 	qgroup_sort integer NOT NULL DEFAULT -1,
 	qgroup_header text NOT NULL,
-	qgroup_scale text NOT NULL, -- 'nominal', 'ordinal', 'metric'
-	qgroup_qtype_id integer NOT NULL,
+	qgroup_scale varchar(255) NOT NULL,
+	qgroup_questiondisplay varchar(255) NOT NULL,
+    qgroup_freefield varchar(255) NOT NULL,
 	qgroup_section_id integer NOT NULL,
-	
+
 	FOREIGN KEY (qgroup_qtype_id)
 		REFERENCES qtype (qtype_id),
 	FOREIGN KEY (qgroup_section_id)
@@ -45,7 +40,7 @@ CREATE TABLE question
 	question_sort integer NOT NULL DEFAULT -1,
 	question_text text NOT NULL,
 	question_qgroup_id integer NOT NULL,
-	
+
 	FOREIGN KEY (question_qgroup_id)
 		REFERENCES qgroup (qgroup_id)
 );
@@ -59,7 +54,7 @@ CREATE TABLE rating
 	rating_value text NOT NULL,
 	rating_dev_given boolean NOT NULL,
 	rating_qgroup_id integer NOT NULL,
-	
+
 	UNIQUE (rating_qgroup_id, rating_value),
 	FOREIGN KEY (rating_qgroup_id)
 		REFERENCES qgroup (qgroup_id)
@@ -73,7 +68,7 @@ CREATE TABLE answer
 	answer_rating_id integer NOT NULL,
 	answer_question_id integer NOT NULL,
 	answer_participant_id integer NOT NULL,
-	
+
 	FOREIGN KEY (answer_participant_id)
 		REFERENCES participant (participant_id),
 	FOREIGN KEY (answer_question_id)
@@ -102,7 +97,7 @@ BEGIN
 	INNER JOIN section ON section_id = qgroup_section_id
 	ORDER BY section_sort, qgroup_sort;
 	RETURN NEXT qtype_qgroupRC;
-	
+
 	OPEN qgroup_ratingRC FOR
 	SELECT * FROM section
 	INNER JOIN qgroup ON qgroup_section_id = section_id
@@ -123,7 +118,7 @@ BEGIN
     WHILE NOT done LOOP
         new_token := substring((md5(''||now()::text||random()::text)) for 4);
         done := NOT EXISTS(
-		SELECT 1 FROM participant 
+		SELECT 1 FROM participant
 		WHERE participant_token = new_token);
     END LOOP;
     RETURN QUERY

@@ -23,11 +23,10 @@ library
                      Handler.Survey
                      Forms.Survey
                      Fields.Survey
-                     Query.Common
                      Query.Transformers
-                     Query.Relation
+                     Query.Types
                      Query.Survey
-                     Model
+                     Query.Model
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT
@@ -93,6 +92,8 @@ library
                  , product-profunctors
                  , MissingH
                  , tuple
+                 , either
+                 , semigroups
 
 executable         FPSurvey
     if flag(library-only)
@@ -126,6 +127,7 @@ test-suite test
                 DeriveDataTypeable
                 ViewPatterns
                 TupleSections
+                ScopedTypeVariables
 
     build-depends: base
                  , FPSurvey
@@ -136,3 +138,5 @@ test-suite test
                  , classy-prelude
                  , classy-prelude-yesod
                  , aeson
+                 , QuickCheck
+                 , semigroups

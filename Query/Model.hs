@@ -1,11 +1,9 @@
-
-module Model where
+module Query.Model where
 
 import Import
 import Opaleye as OE
 import Data.Profunctor.Product.TH (makeAdaptorAndInstance)
-import Data.Profunctor.Product
-import Query.Relation
+import Query.Types
 
 -- table participant
 
@@ -40,7 +38,7 @@ data Section' a b c = Section {
     sectionSort :: b,
     sectionTitle :: c
 } deriving (Show, Eq)
-$(deriveRelation ''Section' "pSection")
+$(makeAdaptorAndInstance "pSection" ''Section')
 
 newtype SectionId' a = SectionId { unSectionId :: a } deriving (Show, Eq)
 $(makeAdaptorAndInstance "pSectionId" ''SectionId')
@@ -64,59 +62,16 @@ sectionTable = Table "section" $
 zipSection :: Section' (SectionId' [a]) [b] [c] -> [Section' (SectionId' a) b c]
 zipSection (Section a b c) = Section <$> (SectionId <$> unSectionId a) <*> b <*> c
 
-liftSectionIds :: (ProductProfunctor p) =>
-    p a0 b0 -> p a1 b1 -> p a2 b2 ->
-    p (Section' (SectionId' a0) a1 a2) (Section' (SectionId' b0) b1 b2)
-liftSectionIds q0 q1 q2 =
-    pSection $ Section (dimap unSectionId SectionId q0) q1 q2
-
--- table qtype
-
-data Qtype' a b = Qtype {
-    qtypeId :: a,
-    qtypeDisplayVariant :: b
-} deriving (Show, Eq)
-$(makeAdaptorAndInstance "pQtype" ''Qtype')
-
-newtype QtypeId' a = QtypeId { unQtypeId :: a } deriving (Show, Eq)
-$(makeAdaptorAndInstance "pQtypeId" ''QtypeId')
-
-type QtypeIdColumn = QtypeId' (Column PGInt4)
-type QtypeWriteIdColumn = (QtypeId' (Maybe (Column PGInt4)))
-
-type QtypeColumnsWrapped w = Qtype'
-    (QtypeId' (w PGInt4))
-    (w PGText)
-type QtypeColumns = QtypeColumnsWrapped Column
-
-type QtypeDataWrapped w = Qtype'
-    (QtypeId' (w Int))
-    (w Text)
-type QtypeData = Qtype'
-    (QtypeId' Int)
-    Text
-
-qtypeTable :: Table
-    (Qtype' QtypeWriteIdColumn (Column PGText))
-    QtypeColumns
-qtypeTable = Table "qtype" $
-    pQtype Qtype {
-        qtypeId             = pQtypeId . QtypeId $ OE.optional "qtype_id",
-        qtypeDisplayVariant = required "qtype_display_variant"
-    }
-
-zipQtype :: Qtype' (QtypeId' [a]) [b] -> [Qtype' (QtypeId' a) b]
-zipQtype (Qtype a b) = zipWith Qtype (QtypeId <$> unQtypeId a) b
-
 -- table qgroup
 
-data Qgroup' a b c d e f = Qgroup {
+data Qgroup' a b c d e f g = Qgroup {
     qgroupId :: a,
     qgroupSort :: b,
     qgroupHeader :: c,
     qgroupScale :: d,
-    qgroupQtypeId :: e,
-    qgroupSectionId :: f
+    qgroupQuestionDisplay :: e,
+    qgroupFreeField :: f,
+    qgroupSectionId :: g
 } deriving (Show, Eq)
 $(makeAdaptorAndInstance "pQgroup" ''Qgroup')
 
@@ -130,62 +85,41 @@ type QgroupColumnsWrapped w = Qgroup'
     (QgroupId' (w PGInt4))
     (w PGInt4)
     (w PGText)
-    (w PGText)
-    (QtypeId' (w PGInt4))
+    (w (PGEnumField Scale))
+    (w (PGEnumField QuestionDisplay))
+    (w (PGEnumField FreeField))
     (SectionId' (w PGInt4))
 type QgroupColumns = QgroupColumnsWrapped Column
 
-type QgroupDataWrapped w = Qgroup'
-    (QgroupId' (w Int))
-    (w Int)
-    (w Text)
-    (w Text)
-    (QtypeId' (w Int))
-    (SectionId' (w Int))
 type QgroupData = Qgroup'
     (QgroupId' Int)
     Int
     Text
-    Text
-    (QtypeId' Int)
+    (EnumField Scale)
+    (EnumField QuestionDisplay)
+    (EnumField FreeField)
     (SectionId' Int)
 
 qgroupTable :: Table
-    (Qgroup' QgroupWriteIdColumn (Column PGInt4) (Column PGText) (Column PGText) QtypeIdColumn SectionIdColumn)
+    (Qgroup'
+        QgroupWriteIdColumn
+        (Column PGInt4)
+        (Column PGText)
+        (Column (PGEnumField Scale))
+        (Column (PGEnumField QuestionDisplay))
+        (Column (PGEnumField FreeField))
+        SectionIdColumn)
     QgroupColumns
 qgroupTable = Table "qgroup" $
     pQgroup Qgroup {
-        qgroupId        = pQgroupId  . QgroupId  $ OE.optional "qgroup_id",
-        qgroupSort      = required "qgroup_sort",
-        qgroupHeader    = required "qgroup_header",
-        qgroupScale     = required "qgroup_scale",
-        qgroupQtypeId   = pQtypeId   . QtypeId   $ required "qgroup_qtype_id",
+        qgroupId                  = pQgroupId  . QgroupId  $ OE.optional "qgroup_id",
+        qgroupSort                = required "qgroup_sort",
+        qgroupHeader              = required "qgroup_header",
+        qgroupScale               = required "qgroup_scale",
+        qgroupQuestionDisplay     = required "qgroup_questiondisplay",
+        qgroupFreeField           = required "qgroup_freefield",
         qgroupSectionId = pSectionId . SectionId $ required "qgroup_section_id"
     }
-
-zipQgroup ::
-    Qgroup' (QgroupId' [a]) [b] [c] [d] (QtypeId' [e]) (SectionId' [f]) ->
-    [Qgroup' (QgroupId' a) b c d (QtypeId' e) (SectionId' f)]
-zipQgroup (Qgroup a b c d e f) = zipWith6 Qgroup
-    (QgroupId <$> unQgroupId a) b c d
-    (QtypeId <$> unQtypeId e) (SectionId <$> unSectionId f)
-
-liftQgroup :: (ProductProfunctor p) =>
-    p a0 b0 -> p a1 b1 -> p a2 b2 -> p a3 b3 -> p a4 b4 -> p a5 b5 ->
-    p (Qgroup' (QgroupId' a0) a1 a2 a3 (QtypeId' a4) (SectionId' a5))
-      (Qgroup' (QgroupId' b0) b1 b2 b3 (QtypeId' b4) (SectionId' b5))
-liftQgroup q0 q1 q2 q3 q4 q5 = pQgroup $ Qgroup
-    (dimap unQgroupId QgroupId q0)
-    q1
-    q2
-    q3
-    (dimap unQtypeId QtypeId q4)
-    (dimap unSectionId SectionId q5)
-
-liftQgroupId :: (Profunctor p) =>
-    p a b ->
-    p (QgroupId' a) (QgroupId' b)
-liftQgroupId = dimap unQgroupId QgroupId
 
 -- table question
 
@@ -222,7 +156,7 @@ type QuestionData = Question'
     (QgroupId' Int)
 
 questionTable :: Table
-    (Question' QuestionWriteIdColumn (Column PGInt4) (Column PGText) (QgroupIdColumn))
+    (Question' QuestionWriteIdColumn (Column PGInt4) (Column PGText) QgroupIdColumn)
     QuestionColumns
 questionTable = Table "question" $
     pQuestion Question {
@@ -275,7 +209,7 @@ type RatingData = Rating'
     (QgroupId' Int)
 
 ratingTable :: Table
-    (Rating' RatingWriteIdColumn (Column PGInt4) (Column PGText) (Column PGBool) (QgroupIdColumn))
+    (Rating' RatingWriteIdColumn (Column PGInt4) (Column PGText) (Column PGBool) QgroupIdColumn)
     RatingColumns
 ratingTable = Table "rating" $
     pRating Rating {
@@ -289,15 +223,6 @@ ratingTable = Table "rating" $
 zipRating :: Rating' (RatingId' [a]) [b] [c] [d] (QgroupId' [e]) ->
     [Rating' (RatingId' a) b c d (QgroupId' e)]
 zipRating (Rating a b c d e) = zipWith5 Rating (RatingId <$> unRatingId a) b c d (QgroupId <$> unQgroupId e)
-
-liftRating :: (ProductProfunctor p) =>
-    p a0 b0 -> p a1 b1 -> p a2 b2 -> p a3 b3 -> p a4 b4 ->
-    p (Rating' (RatingId' a0) a1 a2 a3 (QgroupId' a4)) (Rating' (RatingId' b0) b1 b2 b3 (QgroupId' b4))
-liftRating q0 q1 q2 q3 q4 = pRating $ Rating (liftRatingId q0) q1 q2 q3 (liftQgroupId q4)
-
-liftRatingId :: (Profunctor p) =>
-    p a b -> p (RatingId' a) (RatingId' b)
-liftRatingId = dimap unRatingId RatingId
 
 -- table answer
 
