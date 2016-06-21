@@ -3,6 +3,7 @@ module Query.TransformersSpec (spec) where
 import           Query.Transformers
 import           TestImport
 import qualified Data.List as L
+import qualified Data.List.NonEmpty as NE
 
 spec :: Spec
 spec = do
@@ -12,10 +13,10 @@ spec = do
             (unGroupRight . groupRight) xs == xs
         it "preserves the order of the first elements" $ property $
             \(xs :: [(OrdA, B)]) ->
-            (groupedAs . groupRight) xs == (fst <$> xs)
+            (mconcat . NE.toList . groupedAs . groupRight) xs == (fst <$> xs)
         it "preserves the order of the second elements" $ property $
             \(xs :: [(OrdA, B)]) ->
-            (groupedBs . groupRight) xs == (snd <$> xs)
+            (mconcat . NE.toList . groupedBs . groupRight) xs == (snd <$> xs)
         it "is injective" $ property $
             \((xs :: [(OrdA, B)]), (ys :: [(OrdA, B)])) ->
             xs /= ys ==> groupRight xs /= groupRight ys
