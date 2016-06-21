@@ -68,7 +68,7 @@ unwrapRightCollapsed :: RightCollapsed a b -> [(a, [b])]
 unwrapRightCollapsed = fmap (second NE.toList) . unRightCollapsed
 
 leftJoin :: (Ord a) => RightCollapsed a b -> [a] -> [(a, [b])]
-leftJoin (RightCollapsed xs) as = flip lookupTuple xsMap <$> as
+leftJoin (RightCollapsed xs) as = lookupTuple xsMap <$> as
     where
         xsMap = M.fromList $ second NE.toList <$> xs
-        lookupTuple x cMap = (,) x $ fromMaybe [] $ M.lookup x cMap
+        lookupTuple cMap x = (,) x $ fromMaybe [] $ M.lookup x cMap
