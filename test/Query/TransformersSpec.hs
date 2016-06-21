@@ -13,10 +13,10 @@ spec = do
             (unGroupRight . groupRight) xs == xs
         it "preserves the order of the first elements" $ property $
             \(xs :: [(OrdA, B)]) ->
-            (mconcat . NE.toList . groupedAs . groupRight) xs == (fst <$> xs)
+            (mconcat . (fmap NE.toList) . groupedAs . groupRight) xs == (fst <$> xs)
         it "preserves the order of the second elements" $ property $
             \(xs :: [(OrdA, B)]) ->
-            (mconcat . NE.toList . groupedBs . groupRight) xs == (snd <$> xs)
+            (mconcat . (fmap NE.toList) . groupedBs . groupRight) xs == (snd <$> xs)
         it "is injective" $ property $
             \((xs :: [(OrdA, B)]), (ys :: [(OrdA, B)])) ->
             xs /= ys ==> groupRight xs /= groupRight ys
