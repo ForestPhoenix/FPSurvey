@@ -4,7 +4,7 @@ import Import
 
 import Query.Model
 import Query.Survey
-import Forms.Survey
+import Forms.TakeSurvey
 
 getSurveyR :: Handler Html
 getSurveyR = runSurveyR
@@ -18,18 +18,15 @@ type ListList a = List (List a)
 
 
 runSurveyR :: Handler Html
-runSurveyR = do fail "NY!"
-{-    app <- getYesod
+runSurveyR = do
+    app <- getYesod
     let pool = appConnPool app
-    rawSurvey <- liftIO $ withResource pool $
-        (\conn -> (runQuery conn querySections) :: IO
-         [(SectionData,
-            QgroupDataWrapped List,
-            QtypeDataWrapped List,
-                RatingDataWrapped ListList,
-                QuestionDataWrapped ListList)]
-        )
-    let survey = zipSurveySection <$> rawSurvey
+    $(logDebug) "test1"
+    rawQuestions <- liftIO $ withResource pool $ (\conn -> (runQuery conn querySurveyQuestions))
+    $(logDebug) "test2"
+    rawRatings <- liftIO $ withResource pool $ (\conn -> (runQuery conn queryQgroupRatings))
+    $(logDebug) ((pack . show) rawQuestions)
+    let survey = takeSurvey (rawQuestions, rawRatings)
     ((res, widget), enctype) <- runFormPost $ surveyForm survey
     case res of
         FormMissing -> do
@@ -45,7 +42,7 @@ runSurveyR = do fail "NY!"
                         <br> An error occured: #{errorMessage}
                 |]
         FormSuccess surveyInput -> do
-                defaultLayout $ [whamlet|Coming soon!|] -}
+                defaultLayout $ [whamlet|Coming soon!|]
 --             submitResult <- liftIO $ withResource pool $ submitSurvey surveyInput
 --             case submitResult of
 --                  Just err -> defaultLayout [whamlet| an error occured: #{err}|]

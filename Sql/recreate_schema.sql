@@ -26,8 +26,6 @@ CREATE TABLE qgroup
     qgroup_freefield varchar(255) NOT NULL,
 	qgroup_section_id integer NOT NULL,
 
-	FOREIGN KEY (qgroup_qtype_id)
-		REFERENCES qtype (qtype_id),
 	FOREIGN KEY (qgroup_section_id)
 		REFERENCES section (section_id)
 );

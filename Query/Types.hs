@@ -9,16 +9,18 @@ import Database.PostgreSQL.Simple.ToField
 import Database.PostgreSQL.Simple.Ok
 import Opaleye.Internal.RunQuery
 
-readOk :: Read a => String -> String -> Ok a
-readOk dat err = case readMaybe dat of
-    Just a -> Ok a
-    _ -> Errors [toException $ PatternMatchFail err]
+import Debug.Trace
 
-newtype EnumField a = EnumField { unEnumField :: a}
+readOk :: Read a => String -> Ok a
+readOk dat = trace ("trace1 " ++ show dat) $ case readMaybe dat of
+    Just a -> Ok a
+    _ -> Errors [toException $ PatternMatchFail "could not read FreeField"]
+
+newtype EnumField a = EnumField { unEnumField :: a} deriving (Show, Eq, Ord)
 data PGEnumField a
 
 instance (Read a, Show a) => FromField (EnumField a) where
-    fromField f bs = conversionMap (>>= fmap EnumField . readOk "could not read FreeField") $ fromField f bs
+    fromField f bs = conversionMap (>>= fmap EnumField . readOk) $ fromField f bs
 instance (Read a, Show a) => ToField (EnumField a) where
     toField = toField . show . unEnumField
 instance (Read a, Show a) => QueryRunnerColumnDefault (PGEnumField a) (EnumField a) where
@@ -26,14 +28,15 @@ instance (Read a, Show a) => QueryRunnerColumnDefault (PGEnumField a) (EnumField
 
 data FreeField =
     FreeText |
-    FreeInteger
-    deriving (Read, Show, Eq)
+    FreeInteger |
+    NoFreeField
+    deriving (Read, Show, Eq, Ord)
 
 data QuestionDisplay =
     Empty |
     RadioInline | RadioTable |
     DropDown
-    deriving (Read, Show, Eq)
+    deriving (Read, Show, Eq, Ord)
 
-data Scale = MetricScale | OrdinalScale | IntervalScale | RatioScale
+data Scale = NominalScale | OrdinalScale | IntervalScale | RatioScale
     deriving (Read, Show, Eq, Ord)

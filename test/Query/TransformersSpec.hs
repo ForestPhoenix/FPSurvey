@@ -35,15 +35,15 @@ spec = do
             \(xs :: [(OrdA, B)], ys :: [(OrdA, B)]) ->
             xs /= ys ==> (collapseRight . groupRight) xs /= (collapseRight . groupRight) ys
 
-    describe "leftJoin coll as" $ do
+    describe "dataLeftJoin coll as" $ do
         it "is id when 'as = collapsedAs coll' and no duplicate as are in 'coll'" $ property $
             \(xs :: [(OrdA, B)]) ->
             let collapsed = collapseNub xs in
-            leftJoin collapsed (collapsedAs collapsed) == unwrapRightCollapsed collapsed
+            dataLeftJoin collapsed (groupedAs collapsed) == fromRightCollapsed collapsed
         it "preserves the as in its structure" $ property $
             \(xs :: [(OrdA, B)], as :: [OrdA]) ->
             let collapsed = (collapseRight . groupRight) xs in
-            (fst <$> leftJoin collapsed as) == as
+            groupedAs (dataLeftJoin collapsed as) == as
 
 collapseNub :: Eq a => [(a, b)] -> RightCollapsed a b
 collapseNub xs = unsafeLiftRightCollapsed (L.nubBy (\a b -> fst a == fst b)) $

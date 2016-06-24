@@ -37,10 +37,10 @@ data Section' a b c = Section {
     sectionId :: a,
     sectionSort :: b,
     sectionTitle :: c
-} deriving (Show, Eq)
+} deriving (Show, Eq, Ord)
 $(makeAdaptorAndInstance "pSection" ''Section')
 
-newtype SectionId' a = SectionId { unSectionId :: a } deriving (Show, Eq)
+newtype SectionId' a = SectionId { unSectionId :: a } deriving (Show, Eq, Ord)
 $(makeAdaptorAndInstance "pSectionId" ''SectionId')
 
 type SectionIdColumn = SectionId' (Column PGInt4)
@@ -72,10 +72,10 @@ data Qgroup' a b c d e f g = Qgroup {
     qgroupQuestionDisplay :: e,
     qgroupFreeField :: f,
     qgroupSectionId :: g
-} deriving (Show, Eq)
+} deriving (Show, Eq, Ord)
 $(makeAdaptorAndInstance "pQgroup" ''Qgroup')
 
-newtype QgroupId' a = QgroupId { unQgroupId :: a } deriving (Show, Eq)
+newtype QgroupId' a = QgroupId { unQgroupId :: a } deriving (Show, Eq, Ord)
 $(makeAdaptorAndInstance "pQgroupId" ''QgroupId')
 
 type QgroupIdColumn = (QgroupId' (Column PGInt4))

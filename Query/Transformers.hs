@@ -1,35 +1,52 @@
+{-# LANGUAGE FunctionalDependencies #-}
+
 module Query.Transformers (
+    Grouping,
+    groupedAs,
+    groupedBs,
+    unwrapGrouped,
+
     RightGrouped(),
     unRightGrouped,
     unsafeLiftGrouped,
 
     groupRight,
     unGroupRight,
-    groupedAs,
-    groupedBs,
 
     RightCollapsed(),
     unRightCollapsed,
     unsafeLiftRightCollapsed,
 
     collapseRight,
+    fullCollapseRight,
     unCollapseRight,
-    collapsedAs,
-    collapsedBs,
-    unwrapRightCollapsed,
 
-    leftJoin,
-    fullLeftJoin
+    WeakCollapsed(),
+    unWeakCollapsed,
+    fromRightCollapsed,
+
+    dataLeftJoin,
+    fullDataLeftJoin
 ) where
 
-import           Data.List.NonEmpty as NE
+import           Control.Category
+import           Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as NE
 import           Data.Map.Strict    as M
 import           Import
 
--- arrayAgg
+class Grouping t a b | t -> a b where
+    groupedAs :: t -> [a]
+    groupedBs :: t -> [b]
+    unwrapGrouped :: t -> [(a, b)]
+    unwrapGrouped = uncurry zip . (groupedAs &&& groupedBs)
 
 newtype RightGrouped a b = RightGrouped { unRightGrouped :: [NonEmpty (a, b)] }
     deriving (Show, Eq)
+
+instance Grouping (RightGrouped a b) (NonEmpty a) (NonEmpty b) where
+    groupedAs = fmap (fmap fst) . unRightGrouped
+    groupedBs = fmap (fmap snd) . unRightGrouped
 
 unsafeLiftGrouped :: ([NonEmpty (a, b)] -> [NonEmpty (c, d)]) -> RightGrouped a b -> RightGrouped c d
 unsafeLiftGrouped f = RightGrouped . f . unRightGrouped
@@ -40,15 +57,13 @@ groupRight = RightGrouped <$> NE.groupBy (\a b -> fst a == fst b)
 unGroupRight :: RightGrouped a b -> [(a, b)]
 unGroupRight (RightGrouped xs) = mconcat $ NE.toList <$> xs
 
-groupedAs :: RightGrouped a b -> [NonEmpty a]
-groupedAs = fmap (fmap fst) . unRightGrouped
-
-groupedBs :: RightGrouped a b -> [NonEmpty b]
-groupedBs = fmap (fmap snd) . unRightGrouped
-
 
 newtype RightCollapsed a b = RightCollapsed { unRightCollapsed :: [(a, NonEmpty b)] }
     deriving (Show, Eq)
+
+instance Grouping (RightCollapsed a b) a (NonEmpty b) where
+    groupedAs = fmap fst . unRightCollapsed
+    groupedBs = fmap snd . unRightCollapsed
 
 unsafeLiftRightCollapsed ::
     ([(a, NonEmpty b)] -> [(c, NonEmpty d)]) -> RightCollapsed a b -> RightCollapsed c d
@@ -58,26 +73,30 @@ collapseRight :: RightGrouped a b -> RightCollapsed a b
 collapseRight (RightGrouped xs) = RightCollapsed $
     (first NE.head . NE.unzip) <$> xs
 
+fullCollapseRight :: Eq a => [(a, b)] -> RightCollapsed a b
+fullCollapseRight = collapseRight . groupRight
+
 unCollapseRight :: RightCollapsed a b -> RightGrouped a b
 unCollapseRight (RightCollapsed xs) = RightGrouped $ (\(a, bs) -> NE.zip (NE.repeat a) bs) <$> xs
 
-collapsedAs :: RightCollapsed a b -> [a]
-collapsedAs = fmap fst . unRightCollapsed
 
-collapsedBs :: RightCollapsed a b -> [NonEmpty b]
-collapsedBs = fmap snd . unRightCollapsed
+newtype WeakCollapsed a b = WeakCollapsed { unWeakCollapsed :: [(a, [b])] }
+    deriving (Show, Eq)
 
-unwrapRightCollapsed :: RightCollapsed a b -> [(a, [b])]
-unwrapRightCollapsed = fmap (second NE.toList) . unRightCollapsed
+instance Grouping (WeakCollapsed a b) a [b] where
+    groupedAs = fmap fst . unWeakCollapsed
+    groupedBs = fmap snd . unWeakCollapsed
 
+fromRightCollapsed :: RightCollapsed a b -> WeakCollapsed a b
+fromRightCollapsed = WeakCollapsed . fmap (second NE.toList) . unRightCollapsed
 
-leftJoin :: (Ord a) => RightCollapsed a b -> [a] -> [(a, [b])]
-leftJoin (RightCollapsed xs) as = lookupTuple xsMap <$> as
+dataLeftJoin :: (Ord a) => RightCollapsed a b -> [a] -> WeakCollapsed a b
+dataLeftJoin (RightCollapsed xs) as = WeakCollapsed $ lookupTuple xsMap <$> as
     where
         xsMap = M.fromList $ second NE.toList <$> xs
         lookupTuple cMap x = (,) x $ fromMaybe [] $ M.lookup x cMap
 
-fullLeftJoin :: Ord a => [a] -> [(a, b)] -> [(a, [b])]
-fullLeftJoin as = flip leftJoin as . collapseRight . groupRight
+fullDataLeftJoin :: Ord a => [a] -> [(a, b)] -> WeakCollapsed a b
+fullDataLeftJoin as = flip dataLeftJoin as . collapseRight . groupRight
 
 --unsafeFastLeftJoin :: RightCollapsed a b -> [a] -> LeftJoined a b]
