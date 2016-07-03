@@ -7,6 +7,7 @@ module Fields.Survey (
 import Import
 import Data.Either.Utils
 import Text.Read (readMaybe)
+import qualified Data.Text as T
 
 data InputWithOther a b = InputData a | InputOther b
 
@@ -25,13 +26,14 @@ radioTdField values = Field
     , fieldView = \idAttr nameAttr otherAttrs eResult isReq ->
         [whamlet|
             $forall (idx, (_, html)) <- idxValAL
-                    <td>
-                        <input id=#{idAttr} name=#{nameAttr} *{otherAttrs} type="radio" value=#{idx} required="required">
-                        #{html}
+                <td>
+                    <input id="#{idAttr}_#{idx}" name=#{nameAttr} *{otherAttrs} type="radio" value=#{idx} required="required">
+                    <label for="#{idAttr}_#{idx}"> #{html}
         |]
     , fieldEnctype = UrlEncoded
     }
-    where idxValAL = zip ([1..] :: [Int]) $ values
+    where
+        idxValAL = zip ([1..] :: [Int]) $ values
 
 radioTdFieldWithOther :: (Eq a) =>
     [(a, Html)] ->
@@ -54,9 +56,9 @@ radioTdFieldWithOther values otherView otherRes = Field
     , fieldView = \idAttr nameAttr otherAttrs eResult isReq ->
         [whamlet|
             $forall (idx, (_, html)) <- idxValAL
-                    <td>
-                        <input id=#{idAttr} name=#{nameAttr} *{otherAttrs} type="radio" value=#{idx} required="required">
-                        #{html}
+                <td>
+                    <input id="#{idAttr}_#{idx}" name=#{nameAttr} *{otherAttrs} type="radio" value=#{idx} required="required">
+                    <label for="#{idAttr}_#{idx}" > #{html}
             <td>
                 <input id=#{idAttr} name=#{nameAttr} *{otherAttrs} type="radio" value="otherwise">
                 ^{fvInput otherView}

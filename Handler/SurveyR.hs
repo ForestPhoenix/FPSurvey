@@ -32,7 +32,7 @@ runSurveyR = do
         FormMissing -> do
             defaultLayout
                 [whamlet|
-                    <h1 class="survey_header"> Wie wohl fühlst du dich am OSZ IMT ?
+                    <h1 class="survey_header"> Whats you opinion about programming
                     <form method=post action=@{SurveyR} enctype=#{enctype}> ^{widget}
                 |]
         FormFailure errorMessages -> do

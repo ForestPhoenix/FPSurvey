@@ -2,60 +2,45 @@ body {
     line-height: 1.42857143;
 }
 
-.survey_header {
-    text-align: center;
+.survey td,th {
+    padding-top: 0.2em;
+    padding-bottom: 0.2em;
 }
 
-.survey {
-    
+.qgroupFrame {
+    padding-left: 0.5em;
 }
 
-.survey_token_header {
-    font-size: 120%;
-}
-
-.survey_section {
-    
-}
-
-.survey_group {
-    padding-top: 0.3em;
-    padding-bottom: 0.3em;
-}
-
-.survey_radio {
+.RadioInline {
     width: 100%;
-    border: 1px solid #ccc;
+}
+
+.RadioTable {
     border-collapse: collapse;
-}
-
-.survey_radio th {
-    background-color: #f9f9f9;
-    border-bottom: 1px solid #ccc;
-    padding: 0.5em;
-}
-
-.survey_radio tr {
-    border-bottom: 1px solid #ccc;
-}
-
-.survey_radio tr:nth-child(2n) {
-    background-color: #f9f9f9;
-}
-
-.survey_group table tr:nth-child(2n + 1) {
-    background-color: #fff;
-}
-
-.survey_radio tr td {
-    padding: 0.5em;
-}
-
-.survey_group div > * {
     width: 100%;
 }
 
-.survey_group_header {
+.RadioTable td,th {
+    border: 1px solid #ccc;
+}
+
+.RadioTable thead tr {
+    background-color: #f0f0f6;
+}
+
+.RadioTable tbody tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+.RadioTable input {
+    width: 100%;
+}
+
+.qgroupHeader {
     font-size: 110%;
     font-weight: bold;
+}
+
+label {
+    font-weight: normal;
 }
