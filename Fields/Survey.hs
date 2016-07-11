@@ -1,19 +1,21 @@
 module Fields.Survey (
     radioTdField,
+    genericRadioField,
     InputWithOther (..),
     radioTdFieldWithOther,
+    genericRadioFieldWithOther
    ) where
 
 import Import
 import Data.Either.Utils
+import Query.Types
 import Text.Read (readMaybe)
-import qualified Data.Text as T
-
-data InputWithOther a b = InputData a | InputOther b
-
 
 radioTdField :: (Eq a) => [(a, Html)] -> Field Handler a
-radioTdField values = Field
+radioTdField = genericRadioField (\inner -> [whamlet|<td> ^{inner}|])
+
+genericRadioField :: (Eq a) => (Widget -> Widget) -> [(a, Html)] -> Field Handler a
+genericRadioField wrapper values = Field
     { fieldParse = \rawVals _fileVals ->
         case rawVals of
             [midx] ->
@@ -23,13 +25,14 @@ radioTdField values = Field
                             Just <$> fst <$> lookup idx idxValAL
                     _ -> return $ Left "radioTdField: parsing failed"
             _ -> return $ Left "radioTdField: Value is required"
-    , fieldView = \idAttr nameAttr otherAttrs eResult isReq ->
-        [whamlet|
-            $forall (idx, (_, html)) <- idxValAL
-                <td>
-                    <input id="#{idAttr}_#{idx}" name=#{nameAttr} *{otherAttrs} type="radio" value=#{idx} required="required">
-                    <label for="#{idAttr}_#{idx}"> #{html}
-        |]
+    , fieldView = \idAttr nameAttr otherAttrs eResult isReq -> do
+        sequence $ (wrapper .
+            (\(idx, (_, html)) ->
+            [whamlet|
+                <input id="#{idAttr}_#{idx}" name=#{nameAttr} *{otherAttrs} type="radio" value=#{idx} required="required">
+                <label for="#{idAttr}_#{idx}"> #{html}
+            |])) <$> idxValAL
+        return ()
     , fieldEnctype = UrlEncoded
     }
     where
@@ -40,8 +43,16 @@ radioTdFieldWithOther :: (Eq a) =>
     FieldView App ->
     FormResult b ->
     Field Handler (InputWithOther a b)
+radioTdFieldWithOther = genericRadioFieldWithOther (\inner -> [whamlet|<td> ^{inner}|])
 
-radioTdFieldWithOther values otherView otherRes = Field
+genericRadioFieldWithOther :: (Eq a) =>
+    (Widget -> Widget) ->
+    [(a, Html)] ->
+    FieldView App ->
+    FormResult b ->
+    Field Handler (InputWithOther a b)
+
+genericRadioFieldWithOther wrapper values otherView otherRes = Field
     { fieldParse = \rawVals _fileVals ->
         case rawVals of
             ["otherwise"] ->
@@ -53,16 +64,18 @@ radioTdFieldWithOther values otherView otherRes = Field
                             Just <$> InputData . fst <$> lookup idx idxValAL
                     _ -> return $ Left "radioTdFieldWithOther: parsing failed"
             _ -> return $ Left "radioTdFieldWithOther: Value is required"
-    , fieldView = \idAttr nameAttr otherAttrs eResult isReq ->
-        [whamlet|
-            $forall (idx, (_, html)) <- idxValAL
-                <td>
-                    <input id="#{idAttr}_#{idx}" name=#{nameAttr} *{otherAttrs} type="radio" value=#{idx} required="required">
-                    <label for="#{idAttr}_#{idx}" > #{html}
-            <td>
-                <input id=#{idAttr} name=#{nameAttr} *{otherAttrs} type="radio" value="otherwise">
-                ^{fvInput otherView}
-        |]
+    , fieldView = \idAttr nameAttr otherAttrs eResult isReq -> do
+        sequence $ (wrapper .
+            (\(idx, (_, html)) ->
+            [whamlet|
+                <input id="#{idAttr}_#{idx}" name=#{nameAttr} *{otherAttrs} type="radio" value=#{idx} required="required">
+                <label for="#{idAttr}_#{idx}"> #{html}
+            |])) <$> idxValAL
+        wrapper [whamlet|
+            <input id=#{idAttr} name=#{nameAttr} *{otherAttrs} type="radio" value="otherwise">
+            ^{fvInput otherView}
+            |]
+        return ()
     , fieldEnctype = UrlEncoded
     }
     where idxValAL = zip ([1..] :: [Int]) $ values

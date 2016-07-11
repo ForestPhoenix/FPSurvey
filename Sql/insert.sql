@@ -9,7 +9,7 @@ INSERT INTO section(section_sort, section_title)
 	VALUES(1, 'Programmiersprache');
 
 INSERT INTO qgroup(qgroup_sort, qgroup_header, qgroup_scale, qgroup_questiondisplay, qgroup_freefield, qgroup_section_id)
-	VALUES(1, '', 'NominalScale', 'RadioInline', 'NoFreeField', section_id_by_sort(1));
+	VALUES(1, '', 'NominalScale', 'RadioLines', 'FreeText', section_id_by_sort(1));
 INSERT INTO rating(rating_sort, rating_value, rating_dev_given, rating_qgroup_id)
 	SELECT *, qgroup_id_by_sort(1, section_id_by_sort(1)) FROM (VALUES
 	(0, 'C++', true),
@@ -41,3 +41,12 @@ INSERT INTO question(question_sort, question_text, question_qgroup_id)
 INSERT INTO question(question_sort, question_text, question_qgroup_id)
 	VALUES(3, 'On private projects',
 	qgroup_id_by_sort(2, section_id_by_sort(1)));
+
+INSERT INTO qgroup(qgroup_sort, qgroup_header, qgroup_scale, qgroup_questiondisplay, qgroup_freefield, qgroup_section_id)
+	VALUES(3, 'What languages do you use?', 'OrdinalScale', 'RadioTable', 'FreeText', section_id_by_sort(1));
+INSERT INTO question(question_sort, question_text, question_qgroup_id)
+	VALUES(1, 'In Production',
+	qgroup_id_by_sort(3, section_id_by_sort(1)));
+INSERT INTO question(question_sort, question_text, question_qgroup_id)
+	VALUES(2, 'For Research',
+	qgroup_id_by_sort(3, section_id_by_sort(1)));

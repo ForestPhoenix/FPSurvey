@@ -3,11 +3,8 @@ module Forms.TakeSurvey where
 import Import
 
 import Query.Model
-import Query.Survey (TakeSurvey)
 import Query.Types
 import Fields.Survey
-
-type SurveyInput = InputWithOther RatingData Text
 
 style = $(widgetFile "survey")
 
@@ -98,189 +95,85 @@ groupForm (qgroup, questions, ratings) = do
                                         <th> <span class="qgroupHeader"> #{qgroupHeader qgroup}
                                         $forall descr <- (toHtml . ratingValue) <$> ratings
                                             <th> #{descr}
+                                        $if isJust freeField
+                                            <th>
                                     <tbody>
                                         $forall (question, view) <- moreThanOne
                                             <tr> <td> #{questionText question}
                                                 ^{fvInput view}
                             |]
                 return (results, widget)
-        _ -> undefined
+        RadioLines -> do
+                (results, views) <- unzip <$> forM questions
+                    (\q -> first (fmap (q,)) <$> radioLines ratings (toHtml . ratingValue) freeField)
+                let widget = case zip questions views of
+                        ((question, view):[]) -> [whamlet|
+                            <div class="qgroupFrame">
+                                <span class="qgroupHeader"> #{questionText question}
+                                <table class="RadioLines"> <tbody>
+                                    ^{fvInput view}
+                            |]
+                        moreThanOne -> [whamlet|
+                            <div class="qgroupFrame">
+                                <span class="qgroupHeader"> #{qgroupHeader qgroup}
+                                $forall (question, view) <- moreThanOne
+                                    <table class="RadioLines"> <tbody>
+                                        <td> #{questionText question}
+                                        ^{fvInput view}
+                            |]
+                return (results, widget)
     return (mconcat $ fmap (:[]) <$> results, widget)
 
-freeInputForm :: FreeField -> Maybe (MForm Handler (FormResult Text, FieldView App))
+freeInputForm :: FreeField -> Maybe (MForm Handler (FormResult (Maybe Text), FieldView App))
 
 freeInputForm NoFreeField = Nothing
-freeInputForm _ = undefined
+freeInputForm FreeText = Just $
+    mopt textField "This is no used" Nothing
+freeInputForm FreeInteger = Just $
+    first (fmap . fmap $ pack . show) <$> mopt intField "This is not used" Nothing
 
 radioInput ::
     [RatingData] ->
     (RatingData -> Html) ->
-    Maybe (MForm Handler (FormResult Text, FieldView App)) ->
+    Maybe (MForm Handler (FormResult (Maybe Text), FieldView App)) ->
     MForm Handler (FormResult SurveyInput, FieldView App)
 
 radioInput ratings displayRating Nothing =
-    first (fmap InputData) <$> mreq (radioTdField $ (id &&& displayRating) <$> ratings)
+    first (fmap (InputData)) <$> mreq (radioTdField $ (id &&& displayRating) <$> ratings)
         "This is not used" Nothing
 
 radioInput ratings displayRating (Just otherField) = do
     (subRes, subView) <- otherField
-    mreq (radioTdFieldWithOther
+    (mainRes, mainView) <- mreq (radioTdFieldWithOther
             ((id &&& displayRating) <$> ratings)
             subView subRes)
         "This is not used" Nothing
+    return (convertFreeForm mainRes, mainView)
 
-{- questionForm (RadioWith IntegerInput) ratings question _ = do
-    (subRes, subView) <- mreq intField "This is not used" Nothing
-    let convertedSubRes = pack . show <$> (subRes :: FormResult Int)
-    (ratingRes, ratingView) <- mreq (radioTdFieldWithOther ratings subView convertedSubRes) "This is not used" Nothing
-    let widget = do
-            [whamlet|
-                <td> #{question_text question}
-                ^{fvInput ratingView}
-            |]
-    let result = (,) question <$> (fieldSoToForm <$> ratingRes)
-    return (result, widget) -}
+radioLines ::
+    [RatingData] ->
+    (RatingData -> Html) ->
+    Maybe (MForm Handler (FormResult (Maybe Text), FieldView App)) ->
+    MForm Handler (FormResult SurveyInput, FieldView App)
+radioLines ratings renderRating Nothing =
+    first (fmap (InputData)) <$> mreq (genericRadioField (\inner -> [whamlet|<tr> <td> ^{inner}|]) $
+        (id &&& renderRating) <$> ratings)
+            "This is not used" Nothing
+radioLines ratings renderRating (Just freeField) = do
+    (subRes, subView) <- freeField
+    (mainRes, mainView) <- mreq (genericRadioFieldWithOther (\inner -> [whamlet|<tr> <td> ^{inner}|])
+            ((id &&& renderRating) <$> ratings)
+            subView subRes)
+        "This is not used" Nothing
+    return (convertFreeForm mainRes, mainView)
 
-{-groupForm (qGroup, qtype, questions, ratings) _ = do
-    let dvar = qtype_display_variant qtype
-    let subForms = map (questionForm dvar ratings) questions
-    subFormsRes <- sequence (map (\form -> form $ toHtml $ Text.pack "") subForms)
-    let (subRes, subWidgets) = unzip subFormsRes
-    let widget = case qtype_display_variant qtype of
-            Radio -> [whamlet|
-                <li class="survey_group">
-                    <div>
-                        <span class="survey_group_header"> #{qgroup_header qGroup}
-                        <table class="survey_radio">
-                            <thead>
-                                <tr>
-                                    <th>
-                                    $forall header <- map rating_value ratings
-                                        <th> #{header}
-                            <tbody>
-                                $forall subWidget <- subWidgets
-                                    <tr> ^{subWidget}
-                |]
-            RadioWith _ -> [whamlet|
-                <li class="survey_group">
-                    <div>
-                        <span class="survey_group_header"> #{qgroup_header qGroup}
-                        <table class="survey_radio">
-                            <thead>
-                                <tr>
-                                    <th>
-                                    $forall header <- map rating_value ratings
-                                        <th> #{header}
-                                    <th> other answer
-                            <tbody>
-                                $forall subWidget <- subWidgets
-                                    <tr> ^{subWidget}
-                |]
-            _ -> [whamlet|
-                <li class="survey_group">
-                    <div>
-                        $if (qgroup_header qGroup) == ""
-                            $forall subWidget <- subWidgets
-                                ^{subWidget}
-                        $else
-                            <h3> #{qgroup_header qGroup}
-                            <ol>
-                                $forall subWidget <- subWidgets
-                                    <li> ^{subWidget}
-                |]
-    let result = foldFunctor subRes
-    return (result, widget)
-
-questionForm :: (SqlId a) =>
-    DisplayVariant ->
-    [Rating a] ->
-    Question a ->
-    Html ->
-    MForm Handler (FormResult (Question a, SurveyInput a), Widget)
-
-questionForm DropDown ratings question _ = do
-    let ratingList = map (\r -> (Text.pack $ rating_value r, r)) ratings
-    (ratingRes, ratingView) <- mreq (selectFieldList ratingList) "This is not used" Nothing
-    let widget = do
-            [whamlet|
-                <span class="survey_group_header"> #{question_text question}
-                <br>
-                ^{fvInput ratingView}
-            |]
-    let result = (,) question <$> (InputRating <$> ratingRes)
-    return (result, widget)
-
-questionForm Radio ratings question _ = do
-    (ratingRes, ratingView) <- mreq (radioTdField $ zip ratings $ repeat "") "This is not used" Nothing
-    let widget = do
-            [whamlet|
-                <td> #{question_text question}
-                ^{fvInput ratingView}
-            |]
-    let result = (,) question <$> (InputRating <$> ratingRes)
-    return (result, widget)
-
-questionForm RadioInline ratings question _ = do
-    (ratingRes, ratingView) <- mreq (radioTdField $ zip ratings $ map (toHtml . rating_value) ratings) "This is not used" Nothing
-    let widget = do
-            [whamlet|
-                <span class="survey_group_header"> #{question_text question}
-                <table> <tbody> <tr>
-                    ^{fvInput ratingView}
-            |]
-    let result = (,) question <$> (InputRating <$> ratingRes)
-    return (result, widget)
-
-
-questionForm IntegerInput _ question _ = do
-    (intRes, ratingView) <- mreq intField "This is not used" Nothing
-    let widget = do
-            [whamlet|
-                <span class="survey_group_header"> #{question_text question}
-                <br>
-                ^{fvInput ratingView}
-            |]
-    let result = (,) question <$> (InputOther . pack . show <$> (intRes :: FormResult Int))
-    return (result, widget)
-
-questionForm TextInput _ question _ = do
-    (intRes, ratingView) <- mreq textField "This is not used" Nothing
-    let widget = do
-            [whamlet|
-                <span class="survey_group_header"> #{question_text question}
-                <br>
-                ^{fvInput ratingView}
-            |]
-    let result = (,) question <$> (InputOther <$> intRes)
-    return (result, widget)
-
-questionForm (RadioWith IntegerInput) ratings question _ = do
-    (subRes, subView) <- mreq intField "This is not used" Nothing
-    let convertedSubRes = pack . show <$> (subRes :: FormResult Int)
-    (ratingRes, ratingView) <- mreq (radioTdFieldWithOther ratings subView convertedSubRes) "This is not used" Nothing
-    let widget = do
-            [whamlet|
-                <td> #{question_text question}
-                ^{fvInput ratingView}
-            |]
-    let result = (,) question <$> (fieldSoToForm <$> ratingRes)
-    return (result, widget)
-
-questionForm (RadioWith TextInput) ratings question _ = do
-    (subRes, subView) <- mreq textField "This is not used" Nothing
-    (ratingRes, ratingView) <- mreq (radioTdFieldWithOther ratings subView subRes) "This is not used" Nothing
-    let widget = do
-            [whamlet|
-                <td> #{question_text question}
-                ^{fvInput ratingView}
-            |]
-    let result = (,) question <$> (fieldSoToForm <$> ratingRes)
-    return (result, widget)
-
-questionForm (RadioWith _) _ _ _ =
-    error "RadioWith used with invalid sub-input"
-
-fieldSoToForm :: (SqlId a) => SelectWithOther (Rating a) Text -> SurveyInput a
-fieldSoToForm (SelectInput r) = InputRating r
-fieldSoToForm (OtherInput  o) = InputOther o
--}
+convertFreeForm ::
+    FormResult (InputWithOther RatingData (Maybe Text)) ->
+    FormResult (InputWithOther RatingData Text)
+convertFreeForm (FormSuccess value) = convert value
+    where
+        convert (InputData dat) = FormSuccess $ InputData dat
+        convert (InputOther (Nothing)) = FormFailure ["Missing input in FreeForm"]
+        convert (InputOther (Just text)) = FormSuccess $ InputOther text
+convertFreeForm (FormFailure v) = FormFailure v
+convertFreeForm FormMissing = FormMissing

@@ -25,7 +25,8 @@ library
                      Fields.Survey
                      Query.Transformers
                      Query.Types
-                     Query.Survey
+                     Query.ReadSurvey
+                     Query.InsertAnswers
                      Query.Model
 
     if flag(dev) || flag(library-only)

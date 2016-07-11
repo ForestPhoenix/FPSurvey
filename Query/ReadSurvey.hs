@@ -1,7 +1,6 @@
-{-# LANGUAGE Arrows              #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE Arrows #-}
 
-module Query.Survey where
+module Query.ReadSurvey where
 
 import           Control.Arrow
 import qualified Data.List.NonEmpty as NE
@@ -11,14 +10,6 @@ import           Opaleye
 import           Prelude
 import           Query.Model
 import           Query.Transformers
-
-type TakeSurvey = [(
-        SectionData, [(
-            QgroupData,
-            [QuestionData],
-            [RatingData]
-        )]
-    )]
 
 takeSurvey :: ([(SectionData, (QgroupData, QuestionData))], [(QgroupData, RatingData)]) -> TakeSurvey
 takeSurvey = proc (questions, ratings) -> do

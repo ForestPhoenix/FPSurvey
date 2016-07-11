@@ -7,9 +7,8 @@ import Query.Types
 
 -- table participant
 
-data Participant' a b = Participant {
-    participantId :: a,
-    participantToken :: b
+data Participant' a = Participant {
+    participantId :: a
 } deriving (Show, Eq)
 $(makeAdaptorAndInstance "pParticipant" ''Participant')
 
@@ -19,17 +18,17 @@ $(makeAdaptorAndInstance "pParticipantId" ''ParticipantId')
 type ParticipantIdColumn = (ParticipantId' (Column PGInt4))
 type ParticipantWriteIdColumn = (ParticipantId' (Maybe (Column PGInt4)))
 
+type ParticipantColumns = Participant' ParticipantIdColumn
+type ParticipantWriteColumns = Participant' ParticipantWriteIdColumn
+type ParticipantData = Participant' (ParticipantId' Int)
+
 participantTable :: Table
-    (Participant' ParticipantWriteIdColumn (Column PGText))
-    (Participant' ParticipantIdColumn (Column PGText))
+    ParticipantWriteColumns
+    ParticipantColumns
 participantTable = Table "participant" $
     pParticipant Participant {
-        participantId    = pParticipantId . ParticipantId $ OE.optional "participant_id",
-        participantToken = required "participant_token"
+        participantId    = pParticipantId . ParticipantId $ OE.optional "participant_id"
     }
-
-zipParticipant :: Participant' (ParticipantId' [a]) [b] -> [Participant' (ParticipantId' a) b]
-zipParticipant (Participant a b) = zipWith Participant (ParticipantId <$> unParticipantId a) b
 
 -- table section
 
@@ -58,9 +57,6 @@ sectionTable = Table "section" $
         sectionSort  = required "section_sort",
         sectionTitle = required "section_title"
     }
-
-zipSection :: Section' (SectionId' [a]) [b] [c] -> [Section' (SectionId' a) b c]
-zipSection (Section a b c) = Section <$> (SectionId <$> unSectionId a) <*> b <*> c
 
 -- table qgroup
 
@@ -166,10 +162,6 @@ questionTable = Table "question" $
         questionQgroupId = pQgroupId   . QgroupId   $ required "question_qgroup_id"
     }
 
-zipQuestion :: Question' (QuestionId' [a]) [b] [c] (QgroupId' [d]) ->
-    [Question' (QuestionId' a) b c (QgroupId' d)]
-zipQuestion (Question a b c d) = zipWith4 Question (QuestionId <$> unQuestionId a) b c (QgroupId <$> unQgroupId d)
-
 -- table rating
 
 data Rating' a b c d e = Rating {
@@ -195,6 +187,12 @@ type RatingColumnsWrapped w = Rating'
     (QgroupId' (w PGInt4))
 type RatingColumns = RatingColumnsWrapped Column
 
+type RatingWriteColumns = Rating'
+    RatingWriteIdColumn (
+    Column PGInt4)
+    (Column PGText)
+    (Column PGBool) QgroupIdColumn
+
 type RatingDataWrapped w = Rating'
     (RatingId' (w Int))
     (w Int)
@@ -209,7 +207,7 @@ type RatingData = Rating'
     (QgroupId' Int)
 
 ratingTable :: Table
-    (Rating' RatingWriteIdColumn (Column PGInt4) (Column PGText) (Column PGBool) QgroupIdColumn)
+    RatingWriteColumns
     RatingColumns
 ratingTable = Table "rating" $
     pRating Rating {
@@ -219,10 +217,6 @@ ratingTable = Table "rating" $
         ratingDevGiven = required "rating_dev_given",
         ratingQgroupId = pQgroupId . QgroupId $ required "rating_qgroup_id"
     }
-
-zipRating :: Rating' (RatingId' [a]) [b] [c] [d] (QgroupId' [e]) ->
-    [Rating' (RatingId' a) b c d (QgroupId' e)]
-zipRating (Rating a b c d e) = zipWith5 Rating (RatingId <$> unRatingId a) b c d (QgroupId <$> unQgroupId e)
 
 -- table answer
 
@@ -240,8 +234,14 @@ $(makeAdaptorAndInstance "pAnswerId" ''AnswerId')
 type AnswerIdColumn = AnswerId' (Column PGInt4)
 type AnswerWriteIdColumn = (AnswerId' (Maybe (Column PGInt4)))
 
+type AnswerWriteColumns = Answer'
+    (AnswerId' (Maybe (Column PGInt4)))
+    RatingIdColumn
+    QuestionIdColumn
+    ParticipantIdColumn
+
 answerTable :: Table
-    (Answer' (AnswerId' (Maybe (Column PGInt4))) RatingIdColumn QuestionIdColumn ParticipantIdColumn)
+    AnswerWriteColumns
     (Answer' AnswerIdColumn RatingIdColumn QuestionIdColumn ParticipantIdColumn)
 answerTable = Table "answer" $
     pAnswer Answer {
@@ -251,5 +251,14 @@ answerTable = Table "answer" $
         answerParticipantId = pParticipantId . ParticipantId $ required "answer_participant_id"
     }
 
-zipAnswer :: Answer' (AnswerId' [a]) [b] [c] [d] -> [Answer' (AnswerId' a) b c d]
-zipAnswer (Answer a b c d) = zipWith4 Answer (AnswerId <$> unAnswerId a) b c d
+-- type synonyms
+
+type TakeSurvey = [(
+        SectionData, [(
+            QgroupData,
+            [QuestionData],
+            [RatingData]
+        )]
+    )]
+
+type SurveyInput = InputWithOther RatingData Text
