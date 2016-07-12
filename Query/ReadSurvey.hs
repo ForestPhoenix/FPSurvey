@@ -28,7 +28,12 @@ surveyQgroups = proc (ratings, qgroups) -> do
         (groupedBs joinRatings)
 
 queryQgroupRatings :: Query (QgroupColumns, RatingColumns)
-queryQgroupRatings = proc () -> do
+queryQgroupRatings = flip orderBy queryQgroupRatingsUnsorted $
+    asc (qgroupSort . fst) <>
+    asc (ratingSort . snd)
+
+queryQgroupRatingsUnsorted :: Query (QgroupColumns, RatingColumns)
+queryQgroupRatingsUnsorted = proc () -> do
     qgroups <- queryTable qgroupTable -< ()
 
     ratings <- queryTable ratingTable -< ()
